@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Castorcitos Kawaii</title>
-<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&family=Sniglet:wght@800&display=swap" rel="stylesheet">
 <style>
 /* ======================================================================
    CONFIGURACIÓN RÁPIDA — cambia colores y velocidades aquí
@@ -40,7 +40,7 @@ main{width:100%;max-width:480px;padding:0 14px 14px}
 .pinned{position:sticky;top:0;z-index:8;padding-top:14px;background:var(--bg) radial-gradient(var(--dots) 18%,transparent 20%) 0 0/28px 28px;box-shadow:0 8px 10px -8px rgba(0,0,0,.25)}
 h1{margin:6px 0 10px;text-align:center;font-size:1.7rem;font-weight:600;color:var(--fresa);text-shadow:0 3px 0 #fff}
 .hud{display:flex;gap:10px;margin-bottom:46px}
-.pill{flex:1;background:var(--card);border-radius:22px;padding:8px 12px;text-align:center;border:3px solid #fff;box-shadow:0 4px 0 rgba(255,127,174,.35)}
+.pill{flex:1;contain:content;background:var(--card);border-radius:22px;padding:8px 12px;text-align:center;border:3px solid #fff;box-shadow:0 4px 0 rgba(255,127,174,.35)}
 .pill b{display:block;font-size:1.5rem;line-height:1.1}
 .pill span{font-size:.8rem;opacity:.8}
 
@@ -159,11 +159,11 @@ h1{margin:6px 0 10px;text-align:center;font-size:1.7rem;font-weight:600;color:va
 .attpill{position:absolute;top:100%;left:50%;transform:translateX(-50%);margin-top:6px;font-size:.75rem;font-weight:600;color:var(--ink);opacity:.85;text-align:center;line-height:1.35;width:calc(100% - 130px)}
 .attpill .cmb{color:var(--fresa)}
 .helper svg{display:block;width:100%;overflow:visible}
-.helper .ear{animation:none}
 .helper.active g.ear:nth-of-type(1),.helper.active g.ear:nth-of-type(2){animation:earwig var(--hs,1.1s) ease-in-out infinite}
 .helper.active .pick{animation:pickfl var(--hs,1.1s) ease-in-out infinite}
 .helper:not(.active) .pick{opacity:0}
 .helper2.active .tail{animation:tailwag .9s ease-in-out infinite}
+body.held .helper *,body.held .flower,body.held .wx{animation-play-state:paused!important} /* en pausa, todo quieto */
 .acorn{position:fixed;left:0;top:0;width:38px;height:38px;pointer-events:none;z-index:40;filter:drop-shadow(0 2px 0 rgba(0,0,0,.25))}
 .acorn svg{display:block;width:100%}
 @keyframes earwig{0%,50%,100%{transform:rotate(0)}25%{transform:rotate(10deg)}75%{transform:rotate(-6deg)}}
@@ -196,7 +196,7 @@ h2 span{font-size:.85rem;opacity:.7;font-weight:400}
 .tbtn{font:inherit;font-weight:600;color:inherit;background:var(--card);border:2px solid #fff;border-radius:14px;padding:4px 10px;box-shadow:0 3px 0 rgba(107,63,88,.15);cursor:pointer}
 .tbtn:focus-visible{outline:3px solid var(--fresa);outline-offset:2px}
 /* número de tecla en cada agujero: solo en modo teclado */
-.key{display:none;position:absolute;left:50%;bottom:4%;transform:translateX(-50%);z-index:5;min-width:1.5em;padding:1px 5px;border-radius:8px;background:rgba(255,255,255,.85);color:#6b3f58;font-weight:600;font-size:.85rem;text-align:center;pointer-events:none}
+.key{display:none;position:absolute;left:50%;bottom:3%;transform:translateX(-50%);z-index:5;pointer-events:none;font-family:"Sniglet","Fredoka",sans-serif;font-weight:800;font-size:1.35rem;line-height:1;color:var(--fresa);text-shadow:2px 0 #fff,-2px 0 #fff,0 2px #fff,0 -2px #fff,1.5px 1.5px #fff,-1.5px 1.5px #fff,1.5px -1.5px #fff,-1.5px -1.5px #fff,0 4px 0 rgba(107,63,88,.35)}
 body.kbd .key{display:block}
 .reset{font:inherit;color:inherit;background:none;border:2px dashed currentColor;border-radius:14px;padding:4px 10px;opacity:.7;cursor:pointer}
 .toasts{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:6px;z-index:60;width:max-content;max-width:90%;pointer-events:none}
@@ -223,7 +223,7 @@ body.kbd .key{display:block}
       <div class="stk" id="stk"></div>
     </div>
     <div class="pinned">
-      <div class="hud" id="hud">
+      <div class="hud">
         <div class="pill"><b id="coins">0</b><span>flores ✿</span></div>
         <div class="pill"><b id="ips">0</b><span>por segundo</span></div>
         <div class="pill"><b id="tot">0</b><span>castores</span></div>
@@ -252,10 +252,13 @@ body.kbd .key{display:block}
 /* ======================================================================
    TEXTURAS — cambia estos SVG para dar otro aspecto a personajes/tronco
    ====================================================================== */
-const EYES=['#ff5f9e','#5fb0ff','#ffd24a','#5fd9a8','#b78cff','#ff8a5f','#ff5f9e','#5fb0ff'];
+/* Color de ojos de cada castor: 8 tonos repartidos por el círculo de color para que no se confundan */
+const EYES=['#ff4d5e','#ff9a2e','#ffd23f','#43c96b','#22c7c7','#3f7bff','#9b5cff','#ff5fc1'];
+/* Ojo: todo del color del castor, sin pupila, con dos brillos (tamaño pensado para que sea tierno, no inquietante) */
+const EYE=(x,c)=>`<ellipse cx="${x}" cy="55" rx="6.15" ry="7.2" fill="${c}" stroke="#4a2c3a" stroke-width="1.3"/><circle cx="${x-1.95}" cy="52.45" r="1.95" fill="#fff" stroke="none"/><circle cx="${x+2.1}" cy="58.45" r="1" fill="#fff" stroke="none"/>`;
 /* Casco del castor con casco: se cae al primer golpe */
 const HELMET=`<g class="helmet"><path d="M20 42Q22 8 60 8Q98 8 100 42Z" fill="#ffd24a"/><rect x="12" y="37" width="96" height="10" rx="5" fill="#ffc21a"/><path d="M60 9v28M44 14v24M76 14v24" fill="none" stroke-width="1.6"/></g>`;
-const beaver=(b1,b2,casco)=>`<svg viewBox="0 0 120 120" aria-hidden="true"><g stroke="#4a2c3a" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"><circle cx="26" cy="28" r="12" fill="var(--m)"/><circle cx="94" cy="28" r="12" fill="var(--m)"/><circle cx="26" cy="28" r="6" fill="#ffb3cc" stroke="none"/><circle cx="94" cy="28" r="6" fill="#ffb3cc" stroke="none"/><ellipse cx="60" cy="58" rx="50" ry="40" fill="var(--m)"/><ellipse cx="60" cy="71" rx="25" ry="17" fill="#fbe8d3" stroke="none"/><g class="teeth"><rect x="52" y="70" width="16" height="16" rx="4" fill="#fff"/><path d="M60 71v14" fill="none" stroke-width="1.6"/></g><ellipse cx="60" cy="63" rx="6" ry="4" fill="#4a2c3a"/><ellipse cx="38" cy="56" rx="4.2" ry="5.6" fill="${b1}" stroke="#4a2c3a" stroke-width="1"/><ellipse cx="82" cy="56" rx="4.2" ry="5.6" fill="${b2}" stroke="#4a2c3a" stroke-width="1"/><circle cx="36.8" cy="53.8" r="1.5" fill="#fff" stroke="none"/><circle cx="80.8" cy="53.8" r="1.5" fill="#fff" stroke="none"/><ellipse cx="26" cy="68" rx="8" ry="4.5" fill="#ff9fbd" opacity=".75" stroke="none"/><ellipse cx="94" cy="68" rx="8" ry="4.5" fill="#ff9fbd" opacity=".75" stroke="none"/><path d="M20 58L3 53M20 64L1 64M20 70L3 76M100 58l17-5M100 64l19 0M100 70l17 6" fill="none" stroke-width="1.8"/><g class="twig"><rect x="22" y="81" width="76" height="14" rx="7" fill="#d9a06b"/><ellipse cx="29" cy="88" rx="3.5" ry="5" fill="#f6d7a7" stroke-width="1.5"/><ellipse cx="91" cy="88" rx="3.5" ry="5" fill="#f6d7a7" stroke-width="1.5"/><path d="M44 85v6M76 84v6" fill="none" stroke-width="1.5"/></g><circle cx="30" cy="93" r="8" fill="var(--m)"/><circle cx="90" cy="93" r="8" fill="var(--m)"/><path d="M27 97v-4M33 97v-4M87 97v-4M93 97v-4" fill="none" stroke-width="1.3"/>${casco?HELMET:''}</g><circle class="chip" cx="16" cy="80" r="2.6" fill="#f6d7a7" stroke="#4a2c3a" stroke-width="1" style="--dx:-6px"/><circle class="chip" cx="104" cy="80" r="2.6" fill="#f6d7a7" stroke="#4a2c3a" stroke-width="1"/></svg>`;
+const beaver=(b1,b2,casco)=>`<svg viewBox="0 0 120 120" aria-hidden="true"><g stroke="#4a2c3a" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"><circle cx="26" cy="28" r="12" fill="var(--m)"/><circle cx="94" cy="28" r="12" fill="var(--m)"/><circle cx="26" cy="28" r="6" fill="#ffb3cc" stroke="none"/><circle cx="94" cy="28" r="6" fill="#ffb3cc" stroke="none"/><ellipse cx="60" cy="58" rx="50" ry="40" fill="var(--m)"/><ellipse cx="60" cy="71" rx="25" ry="17" fill="#fbe8d3" stroke="none"/><g class="teeth"><rect x="52" y="70" width="16" height="16" rx="4" fill="#fff"/><path d="M60 71v14" fill="none" stroke-width="1.6"/></g><ellipse cx="60" cy="63" rx="6" ry="4" fill="#4a2c3a"/>${EYE(38,b1)}${EYE(82,b2)}<ellipse cx="26" cy="68" rx="8" ry="4.5" fill="#ff9fbd" opacity=".75" stroke="none"/><ellipse cx="94" cy="68" rx="8" ry="4.5" fill="#ff9fbd" opacity=".75" stroke="none"/><path d="M20 58L3 53M20 64L1 64M20 70L3 76M100 58l17-5M100 64l19 0M100 70l17 6" fill="none" stroke-width="1.8"/><g class="twig"><rect x="22" y="81" width="76" height="14" rx="7" fill="#d9a06b"/><ellipse cx="29" cy="88" rx="3.5" ry="5" fill="#f6d7a7" stroke-width="1.5"/><ellipse cx="91" cy="88" rx="3.5" ry="5" fill="#f6d7a7" stroke-width="1.5"/><path d="M44 85v6M76 84v6" fill="none" stroke-width="1.5"/></g><circle cx="30" cy="93" r="8" fill="var(--m)"/><circle cx="90" cy="93" r="8" fill="var(--m)"/><path d="M27 97v-4M33 97v-4M87 97v-4M93 97v-4" fill="none" stroke-width="1.3"/>${casco?HELMET:''}</g><circle class="chip" cx="16" cy="80" r="2.6" fill="#f6d7a7" stroke="#4a2c3a" stroke-width="1" style="--dx:-6px"/><circle class="chip" cx="104" cy="80" r="2.6" fill="#f6d7a7" stroke="#4a2c3a" stroke-width="1"/></svg>`;
 /* Erizo: ¡no hay que golpearlo! Púas generadas en abanico sobre la cabeza */
 const ERIZO=(()=>{
   let sp='';
@@ -327,7 +330,7 @@ function vib(p){if(S.mute)return;try{navigator.vibrate&&navigator.vibrate(p)}cat
    ====================================================================== */
 const $=s=>document.querySelector(s);
 const KEY='topitos-kawaii-v3',BASE_HP=5,ATT=5,PER_STAGE=25;
-const D={c:0,h:0,s:0,p:0,g:0,r:0,m:0,a:0,tot:0,t:0,won:false,att:ATT,round:0,best:0,bestCombo:0,golds:0,helms:0,dodges:0,maxStage:0,mute:false};
+const D={c:0,h:0,s:0,p:0,g:0,r:0,m:0,a:0,tot:0,t:0,won:false,att:ATT,round:0,best:0,bestCombo:0,golds:0,helms:0,dodges:0,maxStage:0,mute:false,kbd:false};
 const fresh=()=>Object.assign({},D,{ach:{},t:Date.now()});
 let S=fresh();
 try{const r=localStorage.getItem(KEY);if(r)S=Object.assign(fresh(),JSON.parse(r))}catch(e){}
@@ -339,7 +342,7 @@ const U=[
  {k:'p',i:'🐰',c:'Conejito',e:'Recoge flores solo',n:'Conejito ayudante',d:'Recoge flores solito, aunque no hagas clic',b:60,f:1.6,max:15},
  {k:'g',i:'✨',c:'Estrellas',e:'Más castores dorados',n:'Polvo de estrellas',d:'Más suerte de castor dorado (x10)',b:40,f:1.75,max:15},
  {k:'r',i:'🌳',c:'Tronco',e:'+1 corazón al tronco',n:'Tronco resistente',d:'+1 corazón en el tronco',b:150,f:3,max:3},
- {k:'m',i:'🧲',c:'Imán',e:'Flores de los que escapan',n:'Imán de flores',d:'Los castores que escapan dejan flores (+10% por nivel)',b:120,f:2.2,max:5},
+ {k:'m',i:'🧲',c:'Imán',e:'Cobras aunque se escapen',n:'Imán de flores',d:'Si un castor se te escapa sin golpearlo, igualmente te llevas parte de sus flores: un 10% por cada nivel (nivel 5 = la mitad)',b:120,f:2.2,max:5},
  {k:'a',i:'🐿️',c:'Ardilla',e:'Tira bellotas a castores',n:'Ardilla lanzabellotas',d:'Tira bellotas a los castores (nunca a los erizos); más nivel, más a menudo',b:400,f:1.7,max:10}
 ];
 const val=()=>1+S.h;
@@ -355,7 +358,8 @@ const fmt=n=>n>=1e6?(n/1e6).toFixed(1)+'M':n>=1e3?(n/1e3).toFixed(1)+'k':String(
 /* Solo tocan la página si el texto cambia: render() va 10 veces por segundo */
 const setText=(el,t)=>{if(el.textContent!==t)el.textContent=t};
 const setHTML=(el,h)=>{if(el._h!==h){el._h=h;el.innerHTML=h}};
-function toast(t){const e=document.createElement('div');e.className='toast';e.textContent=t;$('#toasts').appendChild(e);setTimeout(()=>e.remove(),3500)}
+const toastsEl=$('#toasts');
+function toast(t){const e=document.createElement('div');e.className='toast';e.textContent=t;toastsEl.appendChild(e);setTimeout(()=>e.remove(),3500)}
 
 /* Estaciones: cada 25 castores seguidos en una ronda. Cada una trae un personaje nuevo */
 const SEASONS=[
@@ -389,7 +393,7 @@ const field=$('#field'),weather=$('#weather'),cells=[];
 const logEl=document.createElement('div');logEl.className='log';logEl.innerHTML=LOG+'<div class="hp"></div>';
 const attpill=$('#attpill');
 const bites=[...logEl.querySelectorAll('.bite')];
-const mouth=logEl.querySelector('.mouth');
+const mouth=logEl.querySelector('.mouth'),hpEl=logEl.querySelector('.hp');
 const MOUTH={happy:'M55 84q5 5 10 0',neutral:'M55 86h10',sad:'M55 89q5 -5 10 0'};
 const cls=c=>(c.gold?' gold':'')+(c.type!=='normal'?' '+c.type:'');
 /* paused = tronco roto (3 s); hold = pausa del jugador o por cambiar de pestaña */
@@ -421,13 +425,13 @@ function renderLog(){
   const mx=hpMax();
   logEl.classList.toggle('gnaw',!over&&!paused&&cells.some(c=>c.up&&!c.hit&&c.type!=='erizo'));
   logEl.classList.toggle('broken',over||paused);
-  setText(logEl.querySelector('.hp'),'♥'.repeat(hp)+'♡'.repeat(mx-hp));
+  setText(hpEl,'♥'.repeat(hp)+'♡'.repeat(mx-hp));
   const se=SEASONS[stage()%4];
   setHTML(attpill,'Intentos: '+S.att+' · '+se.n+(stage()>=4?' '+(stage()+1):'')+' '+(S.round%PER_STAGE)+'/'+PER_STAGE
     +(combo>=2?'<br><span class="cmb">Combo '+combo+(comboMult(combo)>1?' · x'+comboMult(combo):'')+'</span>':''));
-  const shown=Math.ceil(BITES.length*(mx-hp)/mx);
-  bites.forEach(b=>b.style.opacity=shown>+b.dataset.i?'1':'0');
-  mouth.setAttribute('d', hp/mx<=.25?MOUTH.sad : hp/mx<=.6?MOUTH.neutral : MOUTH.happy);
+  const shown=Math.ceil(BITES.length*(mx-hp)/mx),face=hp/mx<=.25?MOUTH.sad : hp/mx<=.6?MOUTH.neutral : MOUTH.happy;
+  if(logEl._shown!==shown){logEl._shown=shown;bites.forEach(b=>b.style.opacity=shown>+b.dataset.i?'1':'0')}
+  if(mouth.getAttribute('d')!==face)mouth.setAttribute('d',face);
 }
 function setSeason(){
   const se=SEASONS[stage()%4];
@@ -555,8 +559,8 @@ snd.addEventListener('change',e=>{S.mute=!e.target.checked;if(!S.mute){ac();SFX.
 /* Pausa: esconde los castores (sin morder) y congela castores, ardilla y corazones */
 const pz=document.createElement('div');pz.className='over';
 pz.innerHTML='<b>PAUSA</b><span>Los castores esperan escondidos</span><small>Toca (o pulsa P) para seguir</small>';
-function pauseGame(){if(!started||over||hold)return;hold=true;hideAll();pz.classList.add('show');setText(pauseBtn,'▶ Seguir');renderLog()}
-function resumeGame(){if(!hold)return;hold=false;pz.classList.remove('show');setText(pauseBtn,'⏸ Pausa');renderLog()}
+function pauseGame(){if(!started||over||hold)return;hold=true;document.body.classList.add('held');hideAll();pz.classList.add('show');setText(pauseBtn,'▶ Seguir');renderLog();render()}
+function resumeGame(){if(!hold)return;hold=false;document.body.classList.remove('held');pz.classList.remove('show');setText(pauseBtn,'⏸ Pausa');renderLog();render()}
 pz.addEventListener('click',resumeGame);
 field.appendChild(pz);
 const pauseBtn=$('#pause');pauseBtn.addEventListener('click',()=>hold?resumeGame():pauseGame());
@@ -634,7 +638,7 @@ U.forEach(u=>{
   b.innerHTML='<span class="ic" aria-hidden="true">'+u.i+'</span><span class="tx"><strong></strong><small>'+u.e+'</small></span><span class="price"></span>';
   b.title=u.n+': '+u.d;
   b.addEventListener('click',()=>{
-    const p=cost(u);if(S[u.k]>=u.max||S.c<p)return;
+    const p=cost(u);if(hold||S[u.k]>=u.max||S.c<p)return; // en pausa no se compra
     S.c-=p;S[u.k]++;SFX.buy();
     if(u.k==='r'){hp=Math.min(hpMax(),hp+1);renderLog()}
     render();checkWin();
@@ -664,21 +668,21 @@ function checkAch(){
 }
 
 function render(){
+  const i=ips();
   setText(coinsEl,fmt(S.c));
-  setText(ipsEl,ips().toFixed(ips()<10?1:0));
+  setText(ipsEl,i.toFixed(i<10?1:0));
   setText(totEl,fmt(S.tot));
   U.forEach(u=>{
-    const p=cost(u),mx=S[u.k]>=u.max,dis=mx||S.c<p;
-    setText(u.nEl,u.c+' '+S[u.k]);
-    u.el.setAttribute('aria-label',u.n+', nivel '+S[u.k]+'. '+u.d);
-    setText(u.pEl,mx?'MÁX':fmt(p)+' ✿');
+    const lv=S[u.k],p=cost(u),mx=lv>=u.max,dis=hold||mx||S.c<p;
+    if(u.lv!==lv){ // solo cuando cambia de nivel
+      u.lv=lv;setText(u.nEl,u.c+' '+lv);setText(u.pEl,mx?'MÁX':fmt(p)+' ✿');
+      u.el.setAttribute('aria-label',u.n+', nivel '+lv+'. '+u.d);u.el.classList.toggle('max',mx);
+    }
     if(u.el.disabled!==dis)u.el.disabled=dis;
-    u.el.classList.toggle('max',mx);
   });
   const lvl=S.h===0?0:(S.h<4?1:2);
   if(lvl!==hammerLvl){hammerLvl=lvl;ham.innerHTML=HAMMER[lvl]}
-  helper.classList.toggle('active',S.p>0);
-  helper.style.setProperty('--hs',Math.max(.4,1.5-S.p*.13)+'s');
+  if(helper._p!==S.p){helper._p=S.p;helper.classList.toggle('active',S.p>0);helper.style.setProperty('--hs',Math.max(.4,1.5-S.p*.13)+'s')}
   helper2.classList.toggle('active',S.a>0);
   setText(startBest,S.best?'Récord: '+S.best+' castores en una ronda':'');
   checkAch();
@@ -699,7 +703,7 @@ rb.addEventListener('click',()=>{
   setSeason();save();renderStickers();render();renderLog();
 });
 
-setInterval(()=>{if(!over)S.c+=ips()/10;render()},100);
+setInterval(()=>{if(!over&&!hold)S.c+=ips()/10;render()},100); // en pausa el conejito tampoco recoge
 setInterval(save,3000);
 addEventListener('pagehide',save);
 document.addEventListener('visibilitychange',()=>{if(document.hidden){save();pauseGame()}});
