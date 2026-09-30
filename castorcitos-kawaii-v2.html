@@ -148,7 +148,6 @@ h1{margin:6px 0 10px;text-align:center;font-size:1.7rem;font-weight:600;color:va
 .over b{font-size:2.4rem;color:var(--fresa);-webkit-text-stroke:2px #fff;text-shadow:0 4px 0 #fff}
 .over small{margin-top:6px;background:var(--fresa);color:#fff;padding:6px 14px;border-radius:16px;font-weight:600;font-size:.9rem}
 .over .rec{font-weight:600;color:var(--fresa)}
-.over.start small{font-size:1.2rem;padding:8px 26px}
 #hammer{position:fixed;left:0;top:0;width:64px;height:64px;pointer-events:none;z-index:50;transform-origin:32px 19px;display:none;transition:transform .05s linear}
 #hammer.on{display:block}
 #hammer svg{width:100%;height:100%;display:block}
@@ -163,7 +162,7 @@ h1{margin:6px 0 10px;text-align:center;font-size:1.7rem;font-weight:600;color:va
 .helper.active .pick{animation:pickfl var(--hs,1.1s) ease-in-out infinite}
 .helper:not(.active) .pick{opacity:0}
 .helper2.active .tail{animation:tailwag .9s ease-in-out infinite}
-body.held .helper *,body.held .flower,body.held .wx{animation-play-state:paused!important} /* en pausa, todo quieto */
+body.held .helper *,body.held .flower,body.held .weather .wx{animation-play-state:paused!important} /* en pausa, todo quieto */
 .acorn{position:fixed;left:0;top:0;width:38px;height:38px;pointer-events:none;z-index:40;filter:drop-shadow(0 2px 0 rgba(0,0,0,.25))}
 .acorn svg{display:block;width:100%}
 @keyframes earwig{0%,50%,100%{transform:rotate(0)}25%{transform:rotate(10deg)}75%{transform:rotate(-6deg)}}
@@ -199,8 +198,43 @@ h2 span{font-size:.85rem;opacity:.7;font-weight:400}
 .key{display:none;position:absolute;left:50%;bottom:3%;transform:translateX(-50%);z-index:5;pointer-events:none;font-family:"Sniglet","Fredoka",sans-serif;font-weight:800;font-size:1.35rem;line-height:1;color:var(--fresa);text-shadow:2px 0 #fff,-2px 0 #fff,0 2px #fff,0 -2px #fff,1.5px 1.5px #fff,-1.5px 1.5px #fff,1.5px -1.5px #fff,-1.5px -1.5px #fff,0 4px 0 rgba(107,63,88,.35)}
 body.kbd .key{display:block}
 .reset{font:inherit;color:inherit;background:none;border:2px dashed currentColor;border-radius:14px;padding:4px 10px;opacity:.7;cursor:pointer}
-.toasts{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:6px;z-index:60;width:max-content;max-width:90%;pointer-events:none}
+.toasts{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:6px;z-index:80;width:max-content;max-width:90%;pointer-events:none}
 .toast{background:var(--fresa);color:#fff;padding:10px 16px;border-radius:20px;font-weight:600;box-shadow:0 4px 0 rgba(0,0,0,.15);text-align:center}
+/* --- Menú de inicio: una flor; cada pétalo es una modalidad de juego y del centro asoma un castor --- */
+.menu{position:fixed;inset:0;z-index:70;display:none;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:16px;overflow:auto;background:var(--bg) radial-gradient(var(--dots) 18%,transparent 20%) 0 0/28px 28px}
+.menu.show{display:flex}
+.menu h1{font-size:2.4rem;margin:0}
+.menu p{margin:0;font-weight:600;opacity:.85}
+.menu .rec{color:var(--fresa);font-weight:600;min-height:1.3em}
+.flor{width:min(92vw,62vh,500px);height:auto;overflow:visible}
+.flor text{font-family:"Fredoka","Trebuchet MS",sans-serif;font-weight:600;fill:#6b3f58;text-anchor:middle;pointer-events:none}
+.menu>:not(.sky){position:relative;z-index:1}
+.petal{cursor:pointer;outline:none;transform-box:view-box;transform-origin:200px 200px;transition:transform .2s cubic-bezier(.3,1.6,.5,1)}
+.petal:hover,.petal:focus-visible{transform:scale(1.07)}
+.petal:focus-visible ellipse{stroke:var(--fresa);stroke-width:5}
+.petal.lock{cursor:default}
+.petal.lock ellipse{filter:saturate(.45) brightness(1.08)}
+.petal.lock text{opacity:.75}
+.petal.shake{animation:pshake .4s}
+@keyframes pshake{0%,100%{transform:rotate(0)}25%{transform:rotate(-3deg)}75%{transform:rotate(3deg)}}
+/* dinamismo: los pétalos se despliegan al abrir, luego "respiran" en ola; la flor se mece y las hojas se agitan */
+.pb{transform-box:view-box;transform-origin:200px 200px;animation:breathe 3.2s calc(var(--d)*.45s) ease-in-out infinite,unfold .7s calc(var(--d)*.09s) cubic-bezier(.3,1.5,.5,1) backwards}
+@keyframes breathe{0%,100%{transform:rotate(-2deg) scale(1)}50%{transform:rotate(2deg) scale(1.035)}}
+@keyframes unfold{from{transform:scale(.15) rotate(-40deg);opacity:0}}
+.halo{animation:halo 1.6s ease-in-out infinite}
+@keyframes halo{0%,100%{opacity:0}50%{opacity:.7}}
+.sway{transform-box:view-box;transform-origin:200px 470px;animation:fsway 4.5s ease-in-out infinite}
+@keyframes fsway{0%,100%{transform:rotate(-2.5deg)}50%{transform:rotate(2.5deg)}}
+.leaf{transform-box:view-box;animation:leaf 2.2s ease-in-out infinite}
+.leaf.l{transform-origin:198px 430px}.leaf.r{transform-origin:202px 410px;animation-delay:-1.1s}
+@keyframes leaf{0%,100%{transform:rotate(-7deg)}50%{transform:rotate(7deg)}}
+.peek{animation:peek 2.4s ease-in-out infinite}
+@keyframes peek{0%,100%{transform:translateY(12px)}50%{transform:translateY(-5px)}}
+.look{transform-box:view-box;transform-origin:200px 222px;animation:look 3.6s ease-in-out infinite}
+@keyframes look{0%,20%,100%{transform:rotate(0)}35%,45%{transform:rotate(-8deg)}65%,75%{transform:rotate(8deg)}}
+/* florecitas cayendo por el fondo del menú */
+.sky{position:absolute;inset:0;z-index:0;overflow:hidden;pointer-events:none;container-type:size}
+.sky .wx{width:28px}
 /* --- Distribución: en pantalla estrecha, todo en columna (juego, mejoras, pegatinas);
        en ancha, pegatinas a la izquierda, juego en el centro y mejoras a la derecha --- */
 .layout{display:flex;flex-direction:column}
@@ -237,6 +271,7 @@ body.kbd .key{display:block}
       <h2>Mejoras</h2>
       <div class="ups" id="ups"></div>
       <div class="foot">
+        <button class="tbtn" id="tomenu">🌸 Menú</button>
         <button class="tbtn" id="pause">⏸ Pausa</button>
         <button class="tbtn" id="mode"></button>
         <label><input type="checkbox" id="sound"> Sonido y vibración</label>
@@ -246,6 +281,13 @@ body.kbd .key{display:block}
     </div>
   </div>
 </main>
+<div class="menu show" id="menu" role="dialog" aria-label="Menú de inicio">
+  <div class="sky" id="sky"></div>
+  <h1>Castorcitos ♡</h1>
+  <p>Elige un pétalo para jugar</p>
+  <svg class="flor" id="flor" viewBox="0 0 400 470"></svg>
+  <span class="rec" id="menubest"></span>
+</div>
 <div id="hammer"></div>
 <div class="toasts" id="toasts"></div>
 <script>
@@ -254,8 +296,8 @@ body.kbd .key{display:block}
    ====================================================================== */
 /* Color de ojos de cada castor: 8 tonos repartidos por el círculo de color para que no se confundan */
 const EYES=['#ff4d5e','#ff9a2e','#ffd23f','#43c96b','#22c7c7','#3f7bff','#9b5cff','#ff5fc1'];
-/* Ojo: todo del color del castor, sin pupila, con dos brillos (tamaño pensado para que sea tierno, no inquietante) */
-const EYE=(x,c)=>`<ellipse cx="${x}" cy="55" rx="6.15" ry="7.2" fill="${c}" stroke="#4a2c3a" stroke-width="1.3"/><circle cx="${x-1.95}" cy="52.45" r="1.95" fill="#fff" stroke="none"/><circle cx="${x+2.1}" cy="58.45" r="1" fill="#fff" stroke="none"/>`;
+/* Ojo estilo "brillo kawaii": oscuro, con un reflejo del color del castor abajo y dos brillos blancos */
+const EYE=(x,c)=>`<ellipse cx="${x}" cy="55" rx="5.2" ry="6.4" fill="#2b1a22" stroke="none"/><ellipse cx="${x}" cy="57.6" rx="3.9" ry="3.1" fill="${c}"/><circle cx="${x-1.7}" cy="52.6" r="1.9" fill="#fff" stroke="none"/><circle cx="${x+1.9}" cy="56.4" r=".9" fill="#fff" stroke="none"/>`;
 /* Casco del castor con casco: se cae al primer golpe */
 const HELMET=`<g class="helmet"><path d="M20 42Q22 8 60 8Q98 8 100 42Z" fill="#ffd24a"/><rect x="12" y="37" width="96" height="10" rx="5" fill="#ffc21a"/><path d="M60 9v28M44 14v24M76 14v24" fill="none" stroke-width="1.6"/></g>`;
 const beaver=(b1,b2,casco)=>`<svg viewBox="0 0 120 120" aria-hidden="true"><g stroke="#4a2c3a" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"><circle cx="26" cy="28" r="12" fill="var(--m)"/><circle cx="94" cy="28" r="12" fill="var(--m)"/><circle cx="26" cy="28" r="6" fill="#ffb3cc" stroke="none"/><circle cx="94" cy="28" r="6" fill="#ffb3cc" stroke="none"/><ellipse cx="60" cy="58" rx="50" ry="40" fill="var(--m)"/><ellipse cx="60" cy="71" rx="25" ry="17" fill="#fbe8d3" stroke="none"/><g class="teeth"><rect x="52" y="70" width="16" height="16" rx="4" fill="#fff"/><path d="M60 71v14" fill="none" stroke-width="1.6"/></g><ellipse cx="60" cy="63" rx="6" ry="4" fill="#4a2c3a"/>${EYE(38,b1)}${EYE(82,b2)}<ellipse cx="26" cy="68" rx="8" ry="4.5" fill="#ff9fbd" opacity=".75" stroke="none"/><ellipse cx="94" cy="68" rx="8" ry="4.5" fill="#ff9fbd" opacity=".75" stroke="none"/><path d="M20 58L3 53M20 64L1 64M20 70L3 76M100 58l17-5M100 64l19 0M100 70l17 6" fill="none" stroke-width="1.8"/><g class="twig"><rect x="22" y="81" width="76" height="14" rx="7" fill="#d9a06b"/><ellipse cx="29" cy="88" rx="3.5" ry="5" fill="#f6d7a7" stroke-width="1.5"/><ellipse cx="91" cy="88" rx="3.5" ry="5" fill="#f6d7a7" stroke-width="1.5"/><path d="M44 85v6M76 84v6" fill="none" stroke-width="1.5"/></g><circle cx="30" cy="93" r="8" fill="var(--m)"/><circle cx="90" cy="93" r="8" fill="var(--m)"/><path d="M27 97v-4M33 97v-4M87 97v-4M93 97v-4" fill="none" stroke-width="1.3"/>${casco?HELMET:''}</g><circle class="chip" cx="16" cy="80" r="2.6" fill="#f6d7a7" stroke="#4a2c3a" stroke-width="1" style="--dx:-6px"/><circle class="chip" cx="104" cy="80" r="2.6" fill="#f6d7a7" stroke="#4a2c3a" stroke-width="1"/></svg>`;
@@ -571,9 +613,9 @@ function setMode(){document.body.classList.toggle('kbd',!!S.kbd);setText(modeBtn
 modeBtn.addEventListener('click',()=>{S.kbd=!S.kbd;setMode();save();modeBtn.blur()});
 addEventListener('keydown',e=>{
   if(e.repeat)return;
+  if(menu.classList.contains('show')){if(e.key==='Enter'){e.preventDefault();playMode(0)}return}
   if(e.key==='p'||e.key==='P'||e.key==='Escape'){hold?resumeGame():pauseGame();return}
   if(!S.kbd)return;
-  if(!started&&(e.key==='Enter'||e.key===' ')){e.preventDefault();st0.click();return}
   const k=/^(Digit|Numpad)([1-9])$/.exec(e.code),c=k&&byKey[k[2]];
   if(!c)return;
   e.preventDefault();
@@ -582,11 +624,51 @@ addEventListener('keydown',e=>{
   whack(c);
 });
 
-/* Pantalla de inicio */
-const st0=document.createElement('div');st0.className='over start show';
-st0.innerHTML='<b>Castorcitos ♡</b><span>Golpea a los castores antes de que muerdan el tronco.</span><span>Si sale un erizo, ¡déjalo en paz!</span><span class="rec" id="startbest"></span><small>¡Jugar!</small>';
-st0.addEventListener('click',()=>{ac();started=true;st0.classList.remove('show');renderLog()});
-field.appendChild(st0);
+/* Menú de inicio: flor de 5 pétalos. El primero es el juego clásico; el resto, modalidades que llegarán */
+const MODES=[
+ {n:'Clásico',i:'🔨',c:'#ff9fc7',on:true},
+ {c:'#9fd7ff'},{c:'#ffd28a'},{c:'#b8e986'},{c:'#d4b8ff'}
+];
+const menu=$('#menu'),flor=$('#flor');
+flor.innerHTML='<g class="sway">'
+  // tallo y dos hojas; el tallo nace bajo el centro de la flor (tapado por el disco) para que no se vea cortado
+  +'<path d="M200 200Q190 400 200 470" fill="none" stroke="#57b846" stroke-width="16" stroke-linecap="round"/>'
+  +'<g class="leaf l"><path d="M198 430q-40-30-62-6q30 26 62 6z" fill="#79cf5f" stroke="#4a2c3a" stroke-width="2.5"/><path d="M198 430q-30-10-56-4" fill="none" stroke="#57b846" stroke-width="2"/></g>'
+  +'<g class="leaf r"><path d="M202 410q40-30 62-6q-30 26-62 6z" fill="#79cf5f" stroke="#4a2c3a" stroke-width="2.5"/><path d="M202 410q30-10 56-4" fill="none" stroke="#57b846" stroke-width="2"/></g>'
+  // pétalos con brillo (cada uno respira con un poco de retraso: --d)
+  +MODES.map((m,k)=>{
+    const a=-90+k*72,r=a*Math.PI/180,px=(200+Math.cos(r)*108).toFixed(1),py=(200+Math.sin(r)*108).toFixed(1),lx=(200+Math.cos(r)*134).toFixed(1),ly=200+Math.sin(r)*134;
+    const shape=`transform="rotate(${a+90} ${px} ${py})"`;
+    return `<g class="petal${m.on?'':' lock'}" data-k="${k}" tabindex="0" role="button" aria-label="${m.on?'Jugar: '+m.n:'Modalidad bloqueada, llegará pronto'}"><g class="pb" style="--d:${k}">`
+      +(m.on?`<ellipse class="halo" cx="${px}" cy="${py}" rx="60" ry="90" ${shape} fill="none" stroke="#fff" stroke-width="12"/>`:'')
+      +`<g ${shape}><ellipse cx="${px}" cy="${py}" rx="60" ry="90" fill="${m.c}" stroke="#4a2c3a" stroke-width="3"/><ellipse cx="${px-20}" cy="${py-22}" rx="14" ry="40" fill="#fff" opacity=".35"/></g>`
+      +(m.on?`<text x="${lx}" y="${(ly-6).toFixed(1)}" font-size="30">${m.i}</text><text x="${lx}" y="${(ly+22).toFixed(1)}" font-size="22">${m.n}</text>`
+            :`<text x="${lx}" y="${(ly-2).toFixed(1)}" font-size="24">🔒</text><text x="${lx}" y="${(ly+22).toFixed(1)}" font-size="15">Pronto</text>`)
+      +'</g></g>';
+  }).join('')
+  // centro de la flor: disco con semillas, agujero y castor que asoma y mira a los lados
+  +'<defs><clipPath id="florHole"><rect x="0" y="0" width="400" height="224"/></clipPath></defs>'
+  +'<circle cx="200" cy="200" r="76" fill="#ffe27a" stroke="#4a2c3a" stroke-width="3"/>'
+  +Array.from({length:12},(_,i)=>{const a=i/12*Math.PI*2;return `<circle cx="${(200+Math.cos(a)*64).toFixed(1)}" cy="${(200+Math.sin(a)*64).toFixed(1)}" r="3.5" fill="#f6c343"/>`}).join('')
+  +'<ellipse cx="200" cy="224" rx="46" ry="15" fill="#241713" stroke="#4a2c3a" stroke-width="3"/>'
+  +'<g clip-path="url(#florHole)"><g class="peek"><g class="look" style="--m:#c58e63"><svg x="148" y="138" width="104" height="104" viewBox="0 0 120 120">'+beaver(EYES[7],EYES[7],false)+'</svg></g></g></g>'
+  +'<path d="M154 224A46 15 0 0 0 246 224" fill="none" stroke="#4a2c3a" stroke-width="3"/>'
+  +'</g>';
+// florecitas que caen por el fondo del menú
+$('#sky').innerHTML=Array.from({length:14},(_,i)=>{const d=6+Math.random()*5;return `<div class="wx" style="left:${(Math.random()*96).toFixed(1)}%;animation-duration:${d.toFixed(1)}s;animation-delay:${(-Math.random()*d).toFixed(1)}s">${FLOWER(FLORES[i%FLORES.length])}</div>`}).join('');
+function playMode(k){
+  const m=MODES[k];
+  if(!m.on){const g=flor.querySelector(`.petal[data-k="${k}"]`);g.classList.remove('shake');void g.getBoundingClientRect();g.classList.add('shake');toast('Esta modalidad llegará pronto 🌱');return}
+  ac();menu.classList.remove('show');
+  if(!started){started=true;renderLog()}else resumeGame();
+}
+function openMenu(){pauseGame();menu.classList.add('show');flor.querySelector('.petal').focus()}
+flor.querySelectorAll('.petal').forEach(g=>{
+  const k=+g.dataset.k;
+  g.addEventListener('click',()=>playMode(k));
+  g.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.stopPropagation();playMode(k)}});
+});
+$('#tomenu').addEventListener('click',openMenu);
 
 /* Fin de ronda: se guardan las flores y las mejoras, solo empieza otra ronda */
 const ov=document.createElement('div');ov.className='over';
@@ -645,7 +727,7 @@ U.forEach(u=>{
   });
   ups.appendChild(b);u.el=b;u.nEl=b.querySelector('strong');u.pEl=b.querySelector('.price');
 });
-const coinsEl=$('#coins'),ipsEl=$('#ips'),totEl=$('#tot'),startBest=$('#startbest');
+const coinsEl=$('#coins'),ipsEl=$('#ips'),totEl=$('#tot'),menuBest=$('#menubest');
 
 const stk=$('#stk');
 A.forEach(a=>{
@@ -684,7 +766,7 @@ function render(){
   if(lvl!==hammerLvl){hammerLvl=lvl;ham.innerHTML=HAMMER[lvl]}
   if(helper._p!==S.p){helper._p=S.p;helper.classList.toggle('active',S.p>0);helper.style.setProperty('--hs',Math.max(.4,1.5-S.p*.13)+'s')}
   helper2.classList.toggle('active',S.a>0);
-  setText(startBest,S.best?'Récord: '+S.best+' castores en una ronda':'');
+  setText(menuBest,S.best?'Récord: '+S.best+' castores en una ronda':'');
   checkAch();
 }
 function save(){S.t=Date.now();try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
