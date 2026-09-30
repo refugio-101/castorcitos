@@ -1,0 +1,371 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Castorcitos Kawaii</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* ======================================================================
+   CONFIGURACIÓN RÁPIDA — cambia colores y velocidades aquí
+   ====================================================================== */
+:root{
+  --bg:#ffe9f1; --dots:#ffd3e4; --card:#fff8e7; --ink:#6b3f58;
+  --fresa:#ff7fae; --cielo:#cde7ff; --log:#c9924f; --log2:#8a5a37;
+  --grass:#9be27c; --grass2:#79cf5f;
+  --dur-rise:.4s; --dur-hide:.3s; --dur-hit:.35s; --dur-sway:1.1s; /* duraciones de animación */
+  --amp:1; /* amplitud global de movimiento: baja a .5 si te parece exagerado, sube a 1.5 si lo quieres más */
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#3b2545;--dots:#4a2f57;--card:#54386a;--ink:#ffe9f1;--grass:#3f8f57;--grass2:#337a49;--cielo:#4a6d94}}
+:root[data-theme="dark"]{--bg:#3b2545;--dots:#4a2f57;--card:#54386a;--ink:#ffe9f1;--grass:#3f8f57;--grass2:#337a49;--cielo:#4a6d94}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{background:var(--bg) radial-gradient(var(--dots) 18%,transparent 20%) 0 0/28px 28px;color:var(--ink);font-family:"Fredoka","Trebuchet MS","Comic Sans MS",system-ui,sans-serif;display:flex;justify-content:center;user-select:none;-webkit-user-select:none;touch-action:manipulation}
+main{width:100%;max-width:480px;padding:0 14px 14px}
+.pinned{position:sticky;top:0;z-index:8;padding-top:14px;background:var(--bg) radial-gradient(var(--dots) 18%,transparent 20%) 0 0/28px 28px;box-shadow:0 8px 10px -8px rgba(0,0,0,.25)}
+h1{margin:6px 0 10px;text-align:center;font-size:1.7rem;font-weight:600;color:var(--fresa);text-shadow:0 3px 0 #fff}
+.hud{display:flex;gap:10px;margin-bottom:46px}
+.pill{flex:1;background:var(--card);border-radius:22px;padding:8px 12px;text-align:center;border:3px solid #fff;box-shadow:0 4px 0 rgba(255,127,174,.35)}
+.pill b{display:block;font-size:1.5rem;line-height:1.1}
+.pill span{font-size:.8rem;opacity:.8}
+
+/* --- Textura del césped: cambia el <svg> de aquí dentro para otra textura --- */
+.field{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:6px;position:relative;cursor:none;
+  border-radius:28px;padding:12px;border:4px solid #fff;box-shadow:0 6px 0 rgba(107,63,88,.15);
+  background:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='56' height='56' viewBox='0 0 56 56'><g fill='none' stroke-linecap='round' stroke-width='2.6'><path d='M8 18l-2-8M8 18l3-7M8 18l6-5M38 12l-2-8M38 12l3-7M38 12l6-5M22 44l-2-8M22 44l3-7M22 44l6-5' stroke='%2357b846'/><path d='M50 46l-1-6M50 46l3-5M30 26l-1-5M30 26l3-4' stroke='%23c4f7a5'/></g><circle cx='46' cy='24' r='2.6' fill='%23fff'/><circle cx='12' cy='42' r='2.2' fill='%23ffd6e7'/></svg>") 0 0/56px 56px,
+    linear-gradient(var(--grass),var(--grass2));
+}
+.hole,.log{position:relative;aspect-ratio:1}
+
+/* Agujero: fondo oscuro + borde de tierra, sin ningún cuadrado detrás del castor */
+.back{position:absolute;left:10%;right:10%;bottom:16%;height:30%;border-radius:50%;background:radial-gradient(#241713,#4a2f22);border:4px solid var(--log2);z-index:0}
+.lip{position:absolute;left:3%;right:3%;bottom:2%;height:26%;border-radius:50%;background:linear-gradient(var(--log),var(--log2));border-bottom:5px solid var(--log2);z-index:2;pointer-events:none;overflow:hidden}
+.lip::before{content:"";position:absolute;inset:0;background:
+  repeating-radial-gradient(ellipse 150% 260% at 50% 120%,
+    transparent 0 5%, rgba(74,44,26,.4) 5% 6.5%, transparent 6.5% 11%)}
+.pit{position:absolute;inset:0;z-index:1;clip-path:inset(-60% -30% 24% -30%)}
+.flower{position:absolute;width:15%;z-index:3;pointer-events:none;animation:flsway 2.6s ease-in-out infinite;transform-origin:bottom center}
+.flower.a{left:0%;top:4%}
+.flower.b{right:0%;top:8%;animation-delay:.6s}
+@keyframes flsway{0%,100%{transform:rotate(-6deg)}50%{transform:rotate(6deg)}}
+
+/* ======================================================================
+   EL CASTOR — 4 estados, sin clases compartidas con nada más del CSS
+   mole            → escondido (estado por defecto)
+   mole--rising    → animación de salir (un ciclo, luego pasa a --idle)
+   mole--idle      → balanceo + mordisco en bucle mientras está fuera
+   mole--hiding    → animación de escape sin golpe (un ciclo, luego vuelve a mole)
+   mole--hit       → animación de golpe con éxito (un ciclo, luego vuelve a mole)
+   ====================================================================== */
+.mole{position:absolute;left:19%;width:62%;bottom:30%;transform-origin:bottom center;transform:translateY(125%) scaleY(.6);--m:#c58e63}
+.mole.gold{--m:#ffcf4d;filter:drop-shadow(0 0 8px #fff2a8)}
+.mole svg{display:block;width:100%;height:auto;overflow:visible}
+
+.mole--rising{animation:rise var(--dur-rise) cubic-bezier(.22,1.6,.4,1) forwards}
+.mole--idle{transform:translateY(0) scaleY(1);animation:sway var(--dur-sway) ease-in-out infinite}
+.mole--hiding{animation:hide var(--dur-hide) cubic-bezier(.6,-.2,.8,.2) forwards}
+.mole--hit{animation:hit var(--dur-hit) ease-out forwards}
+
+@keyframes rise{
+  0%{transform:translateY(125%) scaleY(.55) rotate(0)}
+  55%{transform:translateY(calc(-14% * var(--amp))) scaleY(1.14) rotate(calc(-5deg * var(--amp)))}
+  78%{transform:translateY(calc(4% * var(--amp))) scaleY(.95) rotate(calc(3deg * var(--amp)))}
+  100%{transform:translateY(0) scaleY(1) rotate(0)}
+}
+@keyframes sway{
+  0%,100%{transform:translateY(0) rotate(calc(-4deg * var(--amp)))}
+  50%{transform:translateY(calc(-10% * var(--amp))) rotate(calc(4deg * var(--amp)))}
+}
+@keyframes hide{
+  0%{transform:translateY(0) scaleY(1) rotate(0)}
+  30%{transform:translateY(calc(-18% * var(--amp))) scaleY(1.15) rotate(calc(6deg * var(--amp)))}
+  100%{transform:translateY(125%) scaleY(.5) rotate(0)}
+}
+@keyframes hit{
+  0%{transform:translateY(0) scale(1) rotate(0)}
+  30%{transform:translateY(calc(-8% * var(--amp))) scale(1.3,.6) rotate(calc(-9deg * var(--amp)))}
+  65%{transform:translateY(45%) scale(.85,.85) rotate(calc(10deg * var(--amp)))}
+  100%{transform:translateY(125%) scale(.6,.95) rotate(0)}
+}
+/* dientes, ramita y virutas: solo se mueven mientras está en --idle */
+.mole--idle .teeth{animation:chomp .28s ease-in-out infinite alternate;transform-origin:60px 70px}
+.mole--idle .twig{animation:wig .28s ease-in-out infinite alternate;transform-origin:60px 88px}
+.mole--idle .chip{animation:chip .6s ease-out infinite}
+.mole--idle .chip:nth-of-type(2){animation-delay:.3s}
+@keyframes chomp{0%{transform:translateY(0) scaleY(1)}100%{transform:translateY(calc(4px*var(--amp))) scaleY(.55)}}
+@keyframes wig{0%{transform:translateY(0) rotate(0)}100%{transform:translateY(calc(3px*var(--amp))) rotate(calc(-6deg*var(--amp)))}}
+@keyframes chip{from{opacity:1;transform:translate(0,0) scale(1)}to{opacity:0;transform:translate(var(--dx,10px),-22px) scale(.4)}}
+@media (prefers-reduced-motion:reduce){:root{--amp:.35;--dur-sway:1.6s}}
+
+.log svg{display:block;width:100%;height:auto}
+.log.gnaw svg{animation:wob .25s ease-in-out infinite alternate}
+.log.broken svg{filter:grayscale(.7);transform:rotate(-8deg)}
+@keyframes wob{from{transform:rotate(calc(-1.8deg*var(--amp)))}to{transform:rotate(calc(1.8deg*var(--amp)))}}
+.hp{position:absolute;left:0;right:0;bottom:-2px;text-align:center;font-size:.9rem;letter-spacing:1px;color:var(--fresa);text-shadow:0 1px 0 #fff,0 0 4px #fff}
+.bite{opacity:0;transition:opacity .35s ease}
+.over.win{background:rgba(255,244,214,.94)}
+.petals{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:-1}
+.petal{position:absolute;top:-10%;width:9%;animation:fall linear infinite}
+@keyframes fall{0%{transform:translateY(-20%) rotate(0)}100%{transform:translateY(480%) rotate(300deg)}}
+.fl{position:absolute;left:50%;top:30%;z-index:3;font-weight:600;font-size:1.3rem;color:#fff;text-shadow:0 2px 0 var(--fresa),0 0 6px var(--fresa);pointer-events:none;animation:fl .7s ease-out forwards;white-space:nowrap}
+@keyframes fl{from{transform:translate(-50%,0);opacity:1}to{transform:translate(-50%,-40px);opacity:0}}
+.over{position:absolute;inset:0;z-index:10;display:none;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center;border-radius:24px;background:rgba(255,233,241,.9);color:#6b3f58;cursor:pointer;padding:12px}
+.over.show{display:flex}
+.over b{font-size:2.4rem;color:var(--fresa);-webkit-text-stroke:2px #fff;text-shadow:0 4px 0 #fff}
+.over small{margin-top:6px;background:var(--fresa);color:#fff;padding:6px 14px;border-radius:16px;font-weight:600;font-size:.9rem}
+#hammer{position:fixed;left:0;top:0;width:64px;height:64px;pointer-events:none;z-index:50;transform-origin:32px 19px;display:none;transition:transform .05s linear}
+#hammer.on{display:block}
+#hammer svg{width:100%;height:100%;display:block}
+.hud{position:relative}
+.helper{position:absolute;top:100%;left:4px;width:56px;z-index:6;pointer-events:none;margin-top:2px}
+.attpill{position:absolute;top:100%;left:50%;transform:translateX(-50%);margin-top:6px;font-size:.75rem;font-weight:600;color:var(--ink);opacity:.8;white-space:nowrap}
+.helper svg{display:block;width:100%;overflow:visible}
+.helper .ear{animation:none}
+.helper.active g.ear:nth-of-type(1),.helper.active g.ear:nth-of-type(2){animation:earwig var(--hs,1.1s) ease-in-out infinite}
+.helper.active .pick{animation:pickfl var(--hs,1.1s) ease-in-out infinite}
+.helper:not(.active) .pick{opacity:0}
+@keyframes earwig{0%,50%,100%{transform:rotate(0)}25%{transform:rotate(10deg)}75%{transform:rotate(-6deg)}}
+@keyframes pickfl{0%{opacity:0;transform:translate(4px,4px) scale(.3)}25%{opacity:1;transform:translate(0,-6px) scale(.8)}55%{opacity:1;transform:translate(10px,-20px) scale(.9)}80%{opacity:0;transform:translate(16px,-30px) scale(.5)}100%{opacity:0}}
+h2{font-size:1.1rem;margin:16px 4px 8px}
+.ups{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.up{flex-direction:column;align-items:flex-start;gap:2px}
+.up .price{align-self:flex-end}
+.up{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;text-align:left;font:inherit;color:inherit;background:var(--card);border:3px solid #fff;border-radius:20px;padding:9px 12px;box-shadow:0 4px 0 rgba(107,63,88,.15);cursor:pointer}
+.up:active:not(:disabled){transform:translateY(2px);box-shadow:0 2px 0 rgba(107,63,88,.15)}
+.up:disabled{opacity:.55;cursor:default}
+.up:focus-visible,.hole:focus-visible,.reset:focus-visible{outline:3px solid var(--fresa);outline-offset:2px}
+.up strong{display:block}
+.up small{opacity:.8}
+.price{background:var(--cielo);border-radius:14px;padding:4px 10px;font-weight:600;white-space:nowrap}
+.foot{display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between;align-items:center;margin:14px 4px;font-size:.85rem}
+.foot label{display:flex;align-items:center;gap:5px;cursor:pointer}
+.reset{font:inherit;color:inherit;background:none;border:2px dashed currentColor;border-radius:14px;padding:4px 10px;opacity:.7;cursor:pointer}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fresa);color:#fff;padding:10px 16px;border-radius:20px;font-weight:600;box-shadow:0 4px 0 rgba(0,0,0,.15);max-width:90%;text-align:center;z-index:60}
+@media (min-width:720px){
+  main{max-width:760px}
+  .layout{display:grid;grid-template-columns:1fr 280px;gap:18px;align-items:start}
+  .ups{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<main>
+  <h1>Castorcitos ♡</h1>
+  <div class="layout">
+    <div class="pinned">
+      <div class="hud" id="hud">
+        <div class="pill"><b id="coins">0</b><span>flores ✿</span></div>
+        <div class="pill"><b id="ips">0</b><span>por segundo</span></div>
+        <div class="pill"><b id="tot">0</b><span>castores</span></div>
+        <div class="helper" id="helper"></div>
+        <div class="attpill" id="attpill"></div>
+      </div>
+      <div class="field" id="field"></div>
+    </div>
+    <div class="side">
+      <h2>Mejoras</h2>
+      <div class="ups" id="ups"></div>
+      <div class="foot">
+        <label><input type="checkbox" id="slow"> Ver animación despacio</label>
+        <button class="reset" id="reset">Borrar partida</button>
+      </div>
+    </div>
+  </div>
+</main>
+<div id="hammer"></div>
+<script>
+/* ======================================================================
+   TEXTURAS — cambia estos SVG para dar otro aspecto a personajes/tronco
+   ====================================================================== */
+const EYES=['#ff5f9e','#5fb0ff','#ffd24a','#5fd9a8','#b78cff','#ff8a5f','#ff5f9e','#5fb0ff'];
+const beaver=(b1,b2)=>`<svg viewBox="0 0 120 120" aria-hidden="true"><g stroke="#4a2c3a" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"><circle cx="26" cy="28" r="12" fill="var(--m)"/><circle cx="94" cy="28" r="12" fill="var(--m)"/><circle cx="26" cy="28" r="6" fill="#ffb3cc" stroke="none"/><circle cx="94" cy="28" r="6" fill="#ffb3cc" stroke="none"/><ellipse cx="60" cy="58" rx="50" ry="40" fill="var(--m)"/><ellipse cx="60" cy="71" rx="25" ry="17" fill="#fbe8d3" stroke="none"/><g class="teeth"><rect x="52" y="70" width="16" height="16" rx="4" fill="#fff"/><path d="M60 71v14" fill="none" stroke-width="1.6"/></g><ellipse cx="60" cy="63" rx="6" ry="4" fill="#4a2c3a"/><ellipse cx="38" cy="56" rx="4.2" ry="5.6" fill="${b1}" stroke="#4a2c3a" stroke-width="1"/><ellipse cx="82" cy="56" rx="4.2" ry="5.6" fill="${b2}" stroke="#4a2c3a" stroke-width="1"/><circle cx="36.8" cy="53.8" r="1.5" fill="#fff" stroke="none"/><circle cx="80.8" cy="53.8" r="1.5" fill="#fff" stroke="none"/><ellipse cx="26" cy="68" rx="8" ry="4.5" fill="#ff9fbd" opacity=".75" stroke="none"/><ellipse cx="94" cy="68" rx="8" ry="4.5" fill="#ff9fbd" opacity=".75" stroke="none"/><path d="M20 58L3 53M20 64L1 64M20 70L3 76M100 58l17-5M100 64l19 0M100 70l17 6" fill="none" stroke-width="1.8"/><g class="twig"><rect x="22" y="81" width="76" height="14" rx="7" fill="#d9a06b"/><ellipse cx="29" cy="88" rx="3.5" ry="5" fill="#f6d7a7" stroke-width="1.5"/><ellipse cx="91" cy="88" rx="3.5" ry="5" fill="#f6d7a7" stroke-width="1.5"/><path d="M44 85v6M76 84v6" fill="none" stroke-width="1.5"/></g><circle cx="30" cy="93" r="8" fill="var(--m)"/><circle cx="90" cy="93" r="8" fill="var(--m)"/><path d="M27 97v-4M33 97v-4M87 97v-4M93 97v-4" fill="none" stroke-width="1.3"/></g><circle class="chip" cx="16" cy="80" r="2.6" fill="#f6d7a7" stroke="#4a2c3a" stroke-width="1" style="--dx:-6px"/><circle class="chip" cx="104" cy="80" r="2.6" fill="#f6d7a7" stroke="#4a2c3a" stroke-width="1"/></svg>`;
+const FLORES=['#ff9fc7','#ffffff','#9fd7ff','#ffd28a'];
+const FLOWER=c=>`<svg viewBox="0 0 20 20" aria-hidden="true"><g stroke="#4a2c3a" stroke-width="1"><circle cx="10" cy="6" r="3.4" fill="${c}"/><circle cx="15" cy="10" r="3.4" fill="${c}"/><circle cx="10" cy="14" r="3.4" fill="${c}"/><circle cx="5" cy="10" r="3.4" fill="${c}"/><circle cx="10" cy="10" r="3" fill="#ffe27a"/></g></svg>`;
+/* Martillo: cambia de aspecto según el nivel de la mejora "Martillo de nube" */
+const HAMMER=[
+ `<svg viewBox="0 0 64 64"><g stroke="#4a2c3a" stroke-width="2.4" stroke-linejoin="round"><rect x="28" y="22" width="9" height="38" rx="4.5" fill="#d9a566"/><rect x="14" y="6" width="36" height="22" rx="6" fill="#a9713a"/><rect x="14" y="6" width="8" height="22" rx="4" fill="#8a5a2c"/><rect x="42" y="6" width="8" height="22" rx="4" fill="#8a5a2c"/></g></svg>`,
+ `<svg viewBox="0 0 64 64"><g stroke="#4a2c3a" stroke-width="2.4" stroke-linejoin="round"><rect x="28" y="24" width="9" height="36" rx="4.5" fill="#f6c48a"/><rect x="10" y="6" width="44" height="26" rx="9" fill="#ff8fb8"/><rect x="10" y="6" width="10" height="26" rx="5" fill="#ff6fa5"/><rect x="44" y="6" width="10" height="26" rx="5" fill="#ff6fa5"/><path d="M32 11l2.3 5 5.4.6-4 3.7 1.1 5.3-4.8-2.7-4.8 2.7 1.1-5.3-4-3.7 5.4-.6z" fill="#fff8e7" stroke-width="1.4"/></g></svg>`,
+ `<svg viewBox="0 0 64 64"><g stroke="#4a2c3a" stroke-width="2.4" stroke-linejoin="round"><rect x="28" y="24" width="9" height="36" rx="4.5" fill="#ffe08a"/><rect x="10" y="6" width="44" height="26" rx="9" fill="#ff6fc0"/><rect x="10" y="6" width="10" height="26" rx="5" fill="#ffd24a"/><rect x="44" y="6" width="10" height="26" rx="5" fill="#ffd24a"/><path d="M32 9l3 6 6.6.7-4.8 4.4 1.3 6.4-5.8-3.3-5.8 3.3 1.3-6.4-4.8-4.4 6.6-.7z" fill="#fff" stroke-width="1.4"/><g stroke="none" fill="#fff59e"><circle cx="8" cy="10" r="2"/><circle cx="58" cy="14" r="1.6"/><circle cx="52" cy="4" r="1.4"/></g></g></svg>`
+];
+/* Conejito ayudante con cesta, en la esquina superior derecha del campo */
+const BUNNY=`<svg viewBox="0 0 90 90" aria-hidden="true"><g stroke="#4a2c3a" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><g class="ear" style="transform-origin:38px 26px"><ellipse cx="35" cy="12" rx="7" ry="17" fill="#fff8ef"/><ellipse cx="35" cy="13" rx="3.4" ry="11" fill="#ffc4dc" stroke="none"/></g><g class="ear" style="transform-origin:52px 26px"><ellipse cx="55" cy="12" rx="7" ry="17" fill="#fff8ef"/><ellipse cx="55" cy="13" rx="3.4" ry="11" fill="#ffc4dc" stroke="none"/></g><ellipse cx="45" cy="60" rx="25" ry="21" fill="#fff8ef"/><circle cx="45" cy="35" r="17" fill="#fff8ef"/><path d="M38 35q7 6 14 0" fill="none"/><circle cx="38" cy="31" r="1.6" fill="#4a2c3a" stroke="none"/><circle cx="52" cy="31" r="1.6" fill="#4a2c3a" stroke="none"/><ellipse cx="33" cy="38" rx="4.5" ry="2.6" fill="#ffb3cc" opacity=".8" stroke="none"/><ellipse cx="57" cy="38" rx="4.5" ry="2.6" fill="#ffb3cc" opacity=".8" stroke="none"/><path d="M30 74q15 10 30 0" fill="#c9924f" stroke-width="2.2"/><path d="M27 68h36l-4 12a4 4 0 01-4 3H35a4 4 0 01-4-3z" fill="#c9924f"/><path d="M33 68q6-8 12 0M45 68q6-8 12 0" fill="none" stroke-width="1.6"/><circle cx="38" cy="66" r="3.5" fill="#ff9fc7"/><circle cx="46" cy="64" r="3.5" fill="#ffe27a"/><circle cx="53" cy="67" r="3.5" fill="#9fd7ff"/></g><g class="pick" style="transform-origin:20px 78px"><circle cx="20" cy="78" r="3.4" fill="#ff9fc7" stroke="#4a2c3a" stroke-width="1"/></g></svg>`;
+const LOG='<svg viewBox="0 0 120 120" aria-hidden="true"><g stroke="#4a2c3a" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"><ellipse cx="60" cy="108" rx="44" ry="8" fill="#000" opacity=".12" stroke="none"/><path d="M18 46V96Q18 108 60 108Q102 108 102 96V46Z" fill="#c68c5e"/><ellipse cx="60" cy="46" rx="42" ry="17" fill="#f6d7a7"/><ellipse cx="60" cy="46" rx="30" ry="11" fill="none" stroke-width="1.6"/><ellipse cx="60" cy="46" rx="17" ry="6" fill="none" stroke-width="1.6"/><path d="M30 62v20M90 60v18M74 58v12" fill="none" stroke="#a5693f" stroke-width="2"/><ellipse cx="46" cy="76" rx="3.4" ry="4.6" fill="#2b1a22" stroke="none"/><ellipse cx="74" cy="76" rx="3.4" ry="4.6" fill="#2b1a22" stroke="none"/><ellipse cx="38" cy="86" rx="7" ry="4" fill="#ff9fbd" opacity=".75" stroke="none"/><ellipse cx="82" cy="86" rx="7" ry="4" fill="#ff9fbd" opacity=".75" stroke="none"/><path class="mouth" d="M55 84q5 5 10 0" fill="none"/></g><g class="bites"><g class="bite" transform="translate(18,58) rotate(180) scale(1)"><path fill-rule="evenodd" fill="var(--grass)" stroke="#4a2c3a" stroke-width="1.6" d="M8.5 0 A8.5 8.5 0 1 0 -8.5 0 A8.5 8.5 0 1 0 8.5 0 Z M12.5 0 A7 7 0 1 0 -1.5 0 A7 7 0 1 0 12.5 0 Z"/></g><g class="bite" transform="translate(102,66) scale(.9)"><path fill-rule="evenodd" fill="var(--grass)" stroke="#4a2c3a" stroke-width="1.6" d="M8.5 0 A8.5 8.5 0 1 0 -8.5 0 A8.5 8.5 0 1 0 8.5 0 Z M12.5 0 A7 7 0 1 0 -1.5 0 A7 7 0 1 0 12.5 0 Z"/></g><g class="bite" transform="translate(19,90) rotate(180) scale(.9)"><path fill-rule="evenodd" fill="var(--grass)" stroke="#4a2c3a" stroke-width="1.6" d="M8.5 0 A8.5 8.5 0 1 0 -8.5 0 A8.5 8.5 0 1 0 8.5 0 Z M12.5 0 A7 7 0 1 0 -1.5 0 A7 7 0 1 0 12.5 0 Z"/></g><g class="bite" transform="translate(101,92) scale(.75)"><path fill-rule="evenodd" fill="var(--grass)" stroke="#4a2c3a" stroke-width="1.6" d="M8.5 0 A8.5 8.5 0 1 0 -8.5 0 A8.5 8.5 0 1 0 8.5 0 Z M12.5 0 A7 7 0 1 0 -1.5 0 A7 7 0 1 0 12.5 0 Z"/></g></g></svg>';
+
+/* ======================================================================
+   JUEGO
+   ====================================================================== */
+const $=s=>document.querySelector(s);
+const KEY='topitos-kawaii-v2',MAX=5;
+const D={c:0,h:0,s:0,p:0,g:0,tot:0,t:Date.now(),won:false,att:5};
+let S=Object.assign({},D);
+try{const r=localStorage.getItem(KEY);if(r)S=Object.assign({},D,JSON.parse(r))}catch(e){}
+const U=[
+ {k:'h',n:'Martillo de nube',d:'Más flores por golpe',b:10,f:1.5},
+ {k:'s',n:'Castores más movidos',d:'Salen con más frecuencia',b:25,f:1.65},
+ {k:'p',n:'Conejito ayudante',d:'Recoge flores solito, aunque no hagas clic',b:60,f:1.6},
+ {k:'g',n:'Polvo de estrellas',d:'Más suerte de castor dorado (x10)',b:40,f:1.75}
+];
+const val=()=>1+S.h;
+const cost=u=>Math.ceil(u.b*Math.pow(u.f,S[u.k]));
+const ips=()=>S.p*.5*val();
+const goldP=()=>Math.min(.5,.05+.03*S.g);
+const gap=()=>Math.max(350,1300-90*S.s);
+const fmt=n=>n>=1e6?(n/1e6).toFixed(1)+'M':n>=1e3?(n/1e3).toFixed(1)+'k':String(Math.floor(n));
+function toast(t){const e=document.createElement('div');e.className='toast';e.textContent=t;document.body.appendChild(e);setTimeout(()=>e.remove(),3500)}
+
+let hp=MAX,over=false,paused=false,overAt=0,round=0,slow=false;
+const field=$('#field'),cells=[];
+const logEl=document.createElement('div');logEl.className='log';logEl.innerHTML=LOG+'<div class="hp"></div>';
+const attpill=$('#attpill');
+const bites=[...logEl.querySelectorAll('.bite')];
+const mouth=logEl.querySelector('.mouth');
+const MOUTH={happy:'M55 84q5 5 10 0',neutral:'M55 86h10',sad:'M55 89q5 -5 10 0'};
+for(let i=0,n=0;i<9;i++){
+  if(i===4){field.appendChild(logEl);continue}
+  const el=document.createElement('div');el.className='hole';el.tabIndex=0;el.setAttribute('role','button');el.setAttribute('aria-label','Castor '+(n+1));
+  el.innerHTML='<div class="pit"><div class="mole">'+beaver(EYES[n],EYES[n])+'</div></div><div class="back"></div><div class="lip"></div>'
+    +'<div class="flower a">'+FLOWER(FLORES[n%FLORES.length])+'</div>'
+    +'<div class="flower b">'+FLOWER(FLORES[(n+2)%FLORES.length])+'</div>';
+  n++;
+  const c={el,m:el.querySelector('.mole'),up:false,hit:false,to:null};
+  el.addEventListener('pointerdown',()=>whack(c));
+  el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();whack(c)}});
+  // el propio castor gestiona el final de cada animación de un solo ciclo
+  c.m.addEventListener('animationend',ev=>{
+    if(ev.animationName==='rise'&&c.up) c.m.className='mole mole--idle'+(c.gold?' gold':'');
+    if(ev.animationName==='hide'||ev.animationName==='hit') c.m.className='mole';
+  });
+  field.appendChild(el);cells.push(c);
+}
+function renderLog(){
+  logEl.classList.toggle('gnaw',!over&&!paused&&cells.some(c=>c.up&&!c.hit));
+  logEl.classList.toggle('broken',over||paused);
+  logEl.querySelector('.hp').textContent='♥'.repeat(hp)+'♡'.repeat(MAX-hp);
+  attpill.textContent='Intentos: '+S.att;
+  bites.forEach((b,i)=>b.style.opacity=(MAX-hp)>i?'1':'0');
+  mouth.setAttribute('d', hp<=1?MOUTH.sad : hp<=3?MOUTH.neutral : MOUTH.happy);
+}
+function bite(){
+  if(over||paused||slow)return; // en modo lento no hay penalización, es solo para mirar
+  hp--;
+  if(hp<=0){
+    hp=0;
+    cells.forEach(c=>{if(c.up){c.up=false;c.m.className='mole'}});
+    S.att--;
+    if(S.att<=0){
+      over=true;overAt=Date.now();
+      win.classList.remove('show');
+      ov.querySelector('#round').textContent=round;
+      ov.classList.add('show');
+    }else{
+      paused=true;
+      toast('¡Se rompió el tronco! Te quedan '+S.att+' intentos');
+      setTimeout(()=>{hp=MAX;paused=false;renderLog()},3200);
+    }
+    save();
+  }
+  renderLog();
+}
+function pop(c){
+  c.up=true;c.hit=false;c.gold=Math.random()<goldP();
+  c.m.className='mole mole--rising'+(c.gold?' gold':'');
+  const dur=slow?6000:1300;
+  c.to=setTimeout(()=>{if(c.up&&!c.hit){c.up=false;c.m.className='mole mole--hiding'+(c.gold?' gold':'');bite()}},dur);
+  renderLog();
+}
+function whack(c){
+  if(!c.up||c.hit)return;
+  c.hit=true;c.up=false;clearTimeout(c.to);
+  const v=val()*(c.gold?10:1);S.c+=v;S.tot++;round++;
+  c.m.className='mole mole--hit'+(c.gold?' gold':'');
+  const f=document.createElement('div');f.className='fl';f.textContent='+'+fmt(v)+' ✿';c.el.appendChild(f);
+  setTimeout(()=>f.remove(),700);
+  render();renderLog();
+}
+function spawn(){
+  const free=cells.filter(c=>!c.up);
+  if(!over&&!paused&&free.length)pop(free[Math.random()*free.length|0]);
+  setTimeout(spawn,gap()*(slow?4:1)*(.6+Math.random()*.8));
+}
+setInterval(()=>{if(!over&&!paused&&hp<MAX){hp++;renderLog()}},4000);
+
+$('#slow').addEventListener('change',e=>{slow=e.target.checked});
+
+const ov=document.createElement('div');ov.className='over';
+ov.innerHTML='<b>GAME OVER</b><span>¡Agotaste tus 5 intentos!</span><span>Castores golpeados: <em id="round">0</em></span><small>Toca para empezar de nuevo desde cero</small>';
+ov.addEventListener('click',()=>{
+  if(!over||Date.now()-overAt<500)return;
+  S=Object.assign({},D,{t:Date.now()});save();
+  over=false;paused=false;hp=MAX;round=0;ov.classList.remove('show');renderLog();render();
+});
+field.appendChild(ov);
+
+const win=document.createElement('div');win.className='over win';
+win.innerHTML='<b>¡GANASTE! ✿</b><span>¡Subiste todas las mejoras al máximo!</span><small>Toca para seguir jugando</small><div class="petals"></div>';
+const petals=win.querySelector('.petals');
+for(let i=0;i<16;i++){
+  const p=document.createElement('div');p.className='petal';
+  p.innerHTML=FLOWER(FLORES[i%FLORES.length]);
+  p.style.left=(Math.random()*100)+'%';
+  p.style.animationDelay=(Math.random()*2.4)+'s';
+  p.style.animationDuration=(2+Math.random()*1.6)+'s';
+  petals.appendChild(p);
+}
+win.addEventListener('click',()=>win.classList.remove('show'));
+field.appendChild(win);
+function checkWin(){
+  if(!S.won&&!over&&U.every(u=>S[u.k]>=15)){S.won=true;save();win.classList.add('show')}
+}
+
+const helper=$('#helper');helper.innerHTML=BUNNY;
+const ham=$('#hammer');let hx=0,hy=0,ang=-28,hammerLvl=-1;
+const place=()=>ham.style.transform=`translate(${hx-32}px,${hy-19}px) rotate(${ang}deg)`;
+field.addEventListener('pointermove',e=>{if(e.pointerType!=='mouse')return;hx=e.clientX;hy=e.clientY;ham.classList.add('on');place()});
+field.addEventListener('pointerleave',()=>ham.classList.remove('on'));
+field.addEventListener('pointerdown',e=>{if(e.pointerType!=='mouse')return;ang=24;place();setTimeout(()=>{ang=-28;place()},110)});
+
+const ups=$('#ups');
+U.forEach(u=>{
+  const b=document.createElement('button');b.className='up';
+  b.innerHTML='<span><strong></strong><small></small></span><span class="price"></span>';
+  b.addEventListener('click',()=>{const p=cost(u);if(S.c>=p){S.c-=p;S[u.k]++;render();checkWin()}});
+  ups.appendChild(b);u.el=b;
+});
+function render(){
+  $('#coins').textContent=fmt(S.c);
+  $('#ips').textContent=ips().toFixed(ips()<10?1:0);
+  $('#tot').textContent=fmt(S.tot);
+  U.forEach(u=>{
+    const p=cost(u);
+    u.el.querySelector('strong').textContent=u.n+' · nv '+S[u.k];
+    u.el.querySelector('small').textContent=u.d;
+    u.el.querySelector('.price').textContent=fmt(p)+' ✿';
+    u.el.disabled=S.c<p;
+  });
+  const lvl=S.h===0?0:(S.h<4?1:2);
+  if(lvl!==hammerLvl){hammerLvl=lvl;ham.innerHTML=HAMMER[lvl]}
+  helper.classList.toggle('active',S.p>0);
+  helper.style.setProperty('--hs',Math.max(.4,1.5-S.p*.13)+'s');
+}
+function save(){S.t=Date.now();try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+
+const off=Math.min((Date.now()-S.t)/1000,28800);
+if(off>30&&S.p>0){const g=ips()*off*.5;S.c+=g;toast('Mientras no estabas, el conejito juntó '+fmt(g)+' ✿')}
+
+const rb=$('#reset');let armed=0;
+rb.addEventListener('click',()=>{
+  if(!armed){armed=1;rb.textContent='¿Seguro? Toca otra vez';setTimeout(()=>{armed=0;rb.textContent='Borrar partida'},3000);return}
+  S=Object.assign({},D,{t:Date.now()});save();armed=0;rb.textContent='Borrar partida';render();
+});
+
+setInterval(()=>{if(!over)S.c+=ips()/10;render()},100);
+setInterval(save,3000);
+addEventListener('pagehide',save);
+document.addEventListener('visibilitychange',()=>{if(document.hidden)save()});
+render();renderLog();spawn();
+</script>
+</body>
+</html>

@@ -1,0 +1,709 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Castorcitos Kawaii</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* ======================================================================
+   CONFIGURACIÓN RÁPIDA — cambia colores y velocidades aquí
+   ====================================================================== */
+:root{
+  --bg:#ffe9f1; --dots:#ffd3e4; --card:#fff8e7; --ink:#6b3f58;
+  --fresa:#ff7fae; --cielo:#cde7ff; --log:#c9924f; --log2:#8a5a37;
+  --grass:#9be27c; --grass2:#79cf5f;
+  --dur-rise:.4s; --dur-hide:.3s; --dur-hit:.35s; --dur-sway:1.1s; /* duraciones de animación */
+  --amp:1; /* amplitud global de movimiento: baja a .5 si te parece exagerado, sube a 1.5 si lo quieres más */
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#3b2545;--dots:#4a2f57;--card:#54386a;--ink:#ffe9f1;--grass:#3f8f57;--grass2:#337a49;--cielo:#4a6d94}}
+:root[data-theme="dark"]{--bg:#3b2545;--dots:#4a2f57;--card:#54386a;--ink:#ffe9f1;--grass:#3f8f57;--grass2:#337a49;--cielo:#4a6d94}
+
+/* --- Estaciones: color del césped en cada una (primavera usa el de arriba) --- */
+.field[data-season="ver"]{--grass:#c9e46a;--grass2:#a8cf4a}
+.field[data-season="oto"]{--grass:#d6d36a;--grass2:#b8b44a} /* verde oliva dorado: el marrón se confundía con los castores */
+.field[data-season="inv"]{--grass:#eaf4fb;--grass2:#cfe2f1}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]) .field[data-season="ver"]{--grass:#6f8f3a;--grass2:#5b7a2e}
+  :root:not([data-theme="light"]) .field[data-season="oto"]{--grass:#6f7a36;--grass2:#5c6630}
+  :root:not([data-theme="light"]) .field[data-season="inv"]{--grass:#5d7389;--grass2:#4c6177}
+}
+:root[data-theme="dark"] .field[data-season="ver"]{--grass:#6f8f3a;--grass2:#5b7a2e}
+:root[data-theme="dark"] .field[data-season="oto"]{--grass:#6f7a36;--grass2:#5c6630}
+:root[data-theme="dark"] .field[data-season="inv"]{--grass:#5d7389;--grass2:#4c6177}
+
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{background:var(--bg) radial-gradient(var(--dots) 18%,transparent 20%) 0 0/28px 28px;color:var(--ink);font-family:"Fredoka","Trebuchet MS","Comic Sans MS",system-ui,sans-serif;display:flex;justify-content:center;user-select:none;-webkit-user-select:none;touch-action:manipulation}
+main{width:100%;max-width:480px;padding:0 14px 14px}
+.pinned{position:sticky;top:0;z-index:8;padding-top:14px;background:var(--bg) radial-gradient(var(--dots) 18%,transparent 20%) 0 0/28px 28px;box-shadow:0 8px 10px -8px rgba(0,0,0,.25)}
+h1{margin:6px 0 10px;text-align:center;font-size:1.7rem;font-weight:600;color:var(--fresa);text-shadow:0 3px 0 #fff}
+.hud{display:flex;gap:10px;margin-bottom:46px}
+.pill{flex:1;background:var(--card);border-radius:22px;padding:8px 12px;text-align:center;border:3px solid #fff;box-shadow:0 4px 0 rgba(255,127,174,.35)}
+.pill b{display:block;font-size:1.5rem;line-height:1.1}
+.pill span{font-size:.8rem;opacity:.8}
+
+/* --- Textura del césped: cambia el <svg> de aquí dentro para otra textura --- */
+.field{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:6px;position:relative;cursor:none;
+  border-radius:28px;padding:12px;border:4px solid #fff;box-shadow:0 6px 0 rgba(107,63,88,.15);
+  background:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='56' height='56' viewBox='0 0 56 56'><g fill='none' stroke-linecap='round' stroke-width='2.6'><path d='M8 18l-2-8M8 18l3-7M8 18l6-5M38 12l-2-8M38 12l3-7M38 12l6-5M22 44l-2-8M22 44l3-7M22 44l6-5' stroke='%2357b846'/><path d='M50 46l-1-6M50 46l3-5M30 26l-1-5M30 26l3-4' stroke='%23c4f7a5'/></g><circle cx='46' cy='24' r='2.6' fill='%23fff'/><circle cx='12' cy='42' r='2.2' fill='%23ffd6e7'/></svg>") 0 0/56px 56px,
+    linear-gradient(var(--grass),var(--grass2));
+}
+.hole,.log{position:relative;aspect-ratio:1}
+
+/* Agujero: fondo oscuro + borde de tierra, sin ningún cuadrado detrás del castor */
+.back{position:absolute;left:10%;right:10%;bottom:16%;height:30%;border-radius:50%;background:radial-gradient(#241713,#4a2f22);border:4px solid var(--log2);z-index:0}
+.lip{position:absolute;left:3%;right:3%;bottom:2%;height:26%;border-radius:50%;background:linear-gradient(var(--log),var(--log2));border-bottom:5px solid var(--log2);z-index:2;pointer-events:none;overflow:hidden}
+.lip::before{content:"";position:absolute;inset:0;background:
+  repeating-radial-gradient(ellipse 150% 260% at 50% 120%,
+    transparent 0 5%, rgba(74,44,26,.4) 5% 6.5%, transparent 6.5% 11%)}
+.pit{position:absolute;inset:0;z-index:1;clip-path:inset(-60% -30% 24% -30%)}
+.flower{position:absolute;width:15%;z-index:3;pointer-events:none;animation:flsway 2.6s ease-in-out infinite;transform-origin:bottom center}
+.flower.a{left:0%;top:4%}
+.flower.b{right:0%;top:8%;animation-delay:.6s}
+@keyframes flsway{0%,100%{transform:rotate(-6deg)}50%{transform:rotate(6deg)}}
+
+/* ======================================================================
+   EL CASTOR — 4 estados, sin clases compartidas con nada más del CSS
+   mole            → escondido (estado por defecto)
+   mole--rising    → animación de salir (un ciclo, luego pasa a --idle)
+   mole--idle      → balanceo + mordisco en bucle mientras está fuera
+   mole--hiding    → animación de escape sin golpe (un ciclo, luego vuelve a mole)
+   mole--hit       → animación de golpe con éxito (un ciclo, luego vuelve a mole)
+   Tipos (se suman al estado): gold · bebe · casco · erizo
+   ====================================================================== */
+.mole{position:absolute;left:19%;width:62%;bottom:30%;transform-origin:bottom center;transform:translateY(125%) scaleY(.6);--m:#c58e63}
+.mole.gold{--m:#ffcf4d;filter:drop-shadow(0 0 8px #fff2a8)}
+.mole.bebe{--m:#e8c09a}
+.mole.bebe svg{transform:scale(.78);transform-origin:50% 100%}
+.mole svg{display:block;width:100%;height:auto;overflow:visible}
+.helmet{transform-origin:60px 30px}
+.helmet.off{animation:helmoff .5s ease-out forwards}
+@keyframes helmoff{to{transform:translate(34px,-70px) rotate(50deg);opacity:0}}
+
+.mole--rising{animation:rise var(--dur-rise) cubic-bezier(.22,1.6,.4,1) forwards}
+.mole--idle{transform:translateY(0) scaleY(1);animation:sway var(--dur-sway) ease-in-out infinite}
+.mole--hiding{animation:hide var(--dur-hide) cubic-bezier(.6,-.2,.8,.2) forwards}
+.mole--hit{animation:hit var(--dur-hit) ease-out forwards}
+
+@keyframes rise{
+  0%{transform:translateY(125%) scaleY(.55) rotate(0)}
+  55%{transform:translateY(calc(-14% * var(--amp))) scaleY(1.14) rotate(calc(-5deg * var(--amp)))}
+  78%{transform:translateY(calc(4% * var(--amp))) scaleY(.95) rotate(calc(3deg * var(--amp)))}
+  100%{transform:translateY(0) scaleY(1) rotate(0)}
+}
+@keyframes sway{
+  0%,100%{transform:translateY(0) rotate(calc(-4deg * var(--amp)))}
+  50%{transform:translateY(calc(-10% * var(--amp))) rotate(calc(4deg * var(--amp)))}
+}
+@keyframes hide{
+  0%{transform:translateY(0) scaleY(1) rotate(0)}
+  30%{transform:translateY(calc(-18% * var(--amp))) scaleY(1.15) rotate(calc(6deg * var(--amp)))}
+  100%{transform:translateY(125%) scaleY(.5) rotate(0)}
+}
+@keyframes hit{
+  0%{transform:translateY(0) scale(1) rotate(0)}
+  30%{transform:translateY(calc(-8% * var(--amp))) scale(1.3,.6) rotate(calc(-9deg * var(--amp)))}
+  65%{transform:translateY(45%) scale(.85,.85) rotate(calc(10deg * var(--amp)))}
+  100%{transform:translateY(125%) scale(.6,.95) rotate(0)}
+}
+/* dientes, ramita y virutas: solo se mueven mientras está en --idle */
+.mole--idle .teeth{animation:chomp .28s ease-in-out infinite alternate;transform-origin:60px 70px}
+.mole--idle .twig{animation:wig .28s ease-in-out infinite alternate;transform-origin:60px 88px}
+.mole--idle .chip{animation:chip .6s ease-out infinite}
+.mole--idle .chip:nth-of-type(2){animation-delay:.3s}
+@keyframes chomp{0%{transform:translateY(0) scaleY(1)}100%{transform:translateY(calc(4px*var(--amp))) scaleY(.55)}}
+@keyframes wig{0%{transform:translateY(0) rotate(0)}100%{transform:translateY(calc(3px*var(--amp))) rotate(calc(-6deg*var(--amp)))}}
+@keyframes chip{from{opacity:1;transform:translate(0,0) scale(1)}to{opacity:0;transform:translate(var(--dx,10px),-22px) scale(.4)}}
+@media (prefers-reduced-motion:reduce){:root{--amp:.35;--dur-sway:1.6s}.weather{display:none}}
+
+.log svg{display:block;width:100%;height:auto}
+.log.gnaw svg{animation:wob .25s ease-in-out infinite alternate}
+.log.broken svg{filter:grayscale(.7);transform:rotate(-8deg)}
+@keyframes wob{from{transform:rotate(calc(-1.8deg*var(--amp)))}to{transform:rotate(calc(1.8deg*var(--amp)))}}
+.hp{position:absolute;left:0;right:0;bottom:-2px;text-align:center;font-size:.9rem;letter-spacing:1px;color:var(--fresa);text-shadow:0 1px 0 #fff,0 0 4px #fff}
+.bite{opacity:0;transition:opacity .35s ease}
+
+/* --- Tiempo de cada estación: pétalos, brillos, hojas o nieve cayendo --- */
+/* solo se anima transform (cqh = % del alto del campo) para que el navegador no recalcule la página en cada fotograma */
+.weather{position:absolute;inset:0;overflow:hidden;border-radius:24px;pointer-events:none;z-index:4;container-type:size}
+.wx{position:absolute;top:0;width:5%;animation:wxfall linear infinite;opacity:.9;will-change:transform}
+.wx svg{display:block;width:100%}
+@keyframes wxfall{0%{transform:translate(0,-10cqh) rotate(0)}50%{transform:translate(14px,46cqh) rotate(160deg)}100%{transform:translate(0,102cqh) rotate(320deg)}}
+
+.over.win{background:rgba(255,244,214,.94)}
+.petals{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:-1}
+.petal{position:absolute;top:-10%;width:9%;animation:fall linear infinite}
+@keyframes fall{0%{transform:translateY(-20%) rotate(0)}100%{transform:translateY(480%) rotate(300deg)}}
+.fl{position:absolute;left:50%;top:30%;z-index:5;font-weight:600;font-size:1.3rem;color:#fff;text-shadow:0 2px 0 var(--fresa),0 0 6px var(--fresa);pointer-events:none;animation:fl .7s ease-out forwards;white-space:nowrap}
+.fl.bad{text-shadow:0 2px 0 #9b3b5a,0 0 6px #c0406a;font-size:1.05rem}
+.fl.small{font-size:.95rem;opacity:.9}
+.fl.big{top:42%;font-size:2rem;animation-duration:1s}
+@keyframes fl{from{transform:translate(-50%,0);opacity:1}to{transform:translate(-50%,-40px);opacity:0}}
+.over{position:absolute;inset:0;z-index:10;display:none;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center;border-radius:24px;background:rgba(255,233,241,.92);color:#6b3f58;cursor:pointer;padding:12px}
+.over.show{display:flex}
+.over b{font-size:2.4rem;color:var(--fresa);-webkit-text-stroke:2px #fff;text-shadow:0 4px 0 #fff}
+.over small{margin-top:6px;background:var(--fresa);color:#fff;padding:6px 14px;border-radius:16px;font-weight:600;font-size:.9rem}
+.over .rec{font-weight:600;color:var(--fresa)}
+.over.start small{font-size:1.2rem;padding:8px 26px}
+#hammer{position:fixed;left:0;top:0;width:64px;height:64px;pointer-events:none;z-index:50;transform-origin:32px 19px;display:none;transition:transform .05s linear}
+#hammer.on{display:block}
+#hammer svg{width:100%;height:100%;display:block}
+.hud{position:relative}
+.helper{position:absolute;top:100%;left:4px;width:56px;z-index:6;pointer-events:none;margin-top:2px}
+.helper2{left:auto;right:4px}
+.helper2:not(.active){display:none}
+.attpill{position:absolute;top:100%;left:50%;transform:translateX(-50%);margin-top:6px;font-size:.75rem;font-weight:600;color:var(--ink);opacity:.85;text-align:center;line-height:1.35;width:calc(100% - 130px)}
+.attpill .cmb{color:var(--fresa)}
+.helper svg{display:block;width:100%;overflow:visible}
+.helper .ear{animation:none}
+.helper.active g.ear:nth-of-type(1),.helper.active g.ear:nth-of-type(2){animation:earwig var(--hs,1.1s) ease-in-out infinite}
+.helper.active .pick{animation:pickfl var(--hs,1.1s) ease-in-out infinite}
+.helper:not(.active) .pick{opacity:0}
+.helper2.active .tail{animation:tailwag .9s ease-in-out infinite}
+.acorn{position:fixed;left:0;top:0;width:38px;height:38px;pointer-events:none;z-index:40;filter:drop-shadow(0 2px 0 rgba(0,0,0,.25))}
+.acorn svg{display:block;width:100%}
+@keyframes earwig{0%,50%,100%{transform:rotate(0)}25%{transform:rotate(10deg)}75%{transform:rotate(-6deg)}}
+@keyframes pickfl{0%{opacity:0;transform:translate(4px,4px) scale(.3)}25%{opacity:1;transform:translate(0,-6px) scale(.8)}55%{opacity:1;transform:translate(10px,-20px) scale(.9)}80%{opacity:0;transform:translate(16px,-30px) scale(.5)}100%{opacity:0}}
+@keyframes tailwag{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(8deg)}}
+h2{font-size:1.1rem;margin:16px 4px 8px}
+h2 span{font-size:.85rem;opacity:.7;font-weight:400}
+/* --- Mejoras: botones compactos (icono + nombre + explicación corta + precio); la descripción larga sale al pasar el ratón --- */
+.ups{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.up{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:7px;width:100%;text-align:left;font:inherit;font-size:.78rem;line-height:1.2;color:inherit;background:var(--card);border:2px solid #fff;border-radius:14px;padding:5px 8px;box-shadow:0 3px 0 rgba(107,63,88,.15);cursor:pointer}
+.up .ic{font-size:1.3rem}
+.up .tx{display:flex;flex-direction:column;gap:1px;min-width:0}
+.up strong,.up small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.up small{font-size:.7rem;opacity:.75}
+.up:active:not(:disabled){transform:translateY(2px);box-shadow:0 1px 0 rgba(107,63,88,.15)}
+.up:disabled{opacity:.55;cursor:default}
+.up.max{opacity:.8}
+.up:focus-visible,.hole:focus-visible,.reset:focus-visible,.st:focus-visible{outline:3px solid var(--fresa);outline-offset:2px}
+.price{background:var(--cielo);border-radius:10px;padding:2px 7px;font-weight:600;white-space:nowrap}
+
+/* --- Pegatinas (logros) --- */
+.stk{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.st{aspect-ratio:1;border-radius:50%;background:var(--card);border:3px solid #fff;display:flex;align-items:center;justify-content:center;font:inherit;font-size:1.25rem;color:inherit;padding:0;box-shadow:0 3px 0 rgba(107,63,88,.15);cursor:pointer}
+.st.lock{font-size:1rem;opacity:.4;font-weight:600}
+.st.new{animation:stnew .6s ease-out}
+@keyframes stnew{0%{transform:scale(.3) rotate(-30deg)}70%{transform:scale(1.25) rotate(8deg)}100%{transform:scale(1)}}
+
+.foot{display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between;align-items:center;margin:14px 4px;font-size:.85rem}
+.foot label{display:flex;align-items:center;gap:5px;cursor:pointer}
+.tbtn{font:inherit;font-weight:600;color:inherit;background:var(--card);border:2px solid #fff;border-radius:14px;padding:4px 10px;box-shadow:0 3px 0 rgba(107,63,88,.15);cursor:pointer}
+.tbtn:focus-visible{outline:3px solid var(--fresa);outline-offset:2px}
+/* número de tecla en cada agujero: solo en modo teclado */
+.key{display:none;position:absolute;left:50%;bottom:4%;transform:translateX(-50%);z-index:5;min-width:1.5em;padding:1px 5px;border-radius:8px;background:rgba(255,255,255,.85);color:#6b3f58;font-weight:600;font-size:.85rem;text-align:center;pointer-events:none}
+body.kbd .key{display:block}
+.reset{font:inherit;color:inherit;background:none;border:2px dashed currentColor;border-radius:14px;padding:4px 10px;opacity:.7;cursor:pointer}
+.toasts{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:6px;z-index:60;width:max-content;max-width:90%;pointer-events:none}
+.toast{background:var(--fresa);color:#fff;padding:10px 16px;border-radius:20px;font-weight:600;box-shadow:0 4px 0 rgba(0,0,0,.15);text-align:center}
+/* --- Distribución: en pantalla estrecha, todo en columna (juego, mejoras, pegatinas);
+       en ancha, pegatinas a la izquierda, juego en el centro y mejoras a la derecha --- */
+.layout{display:flex;flex-direction:column}
+.pinned{order:1}.side{order:2}.stickers{order:3}
+@media (min-width:760px){
+  main{max-width:1120px}
+  .layout{display:grid;grid-template-columns:minmax(120px,170px) minmax(0,540px) minmax(220px,260px);grid-template-areas:"l g r";justify-content:center;gap:18px;align-items:start}
+  .stickers{grid-area:l}.pinned{grid-area:g}.side{grid-area:r}
+  .ups{grid-template-columns:1fr}
+  .stk{grid-template-columns:repeat(3,1fr)}
+}
+</style>
+</head>
+<body>
+<main>
+  <h1>Castorcitos ♡</h1>
+  <div class="layout">
+    <div class="stickers">
+      <h2>Pegatinas <span id="stcount"></span></h2>
+      <div class="stk" id="stk"></div>
+    </div>
+    <div class="pinned">
+      <div class="hud" id="hud">
+        <div class="pill"><b id="coins">0</b><span>flores ✿</span></div>
+        <div class="pill"><b id="ips">0</b><span>por segundo</span></div>
+        <div class="pill"><b id="tot">0</b><span>castores</span></div>
+        <div class="helper" id="helper"></div>
+        <div class="helper helper2" id="helper2"></div>
+        <div class="attpill" id="attpill"></div>
+      </div>
+      <div class="field" id="field"><div class="weather" id="weather"></div></div>
+    </div>
+    <div class="side">
+      <h2>Mejoras</h2>
+      <div class="ups" id="ups"></div>
+      <div class="foot">
+        <button class="tbtn" id="pause">⏸ Pausa</button>
+        <button class="tbtn" id="mode"></button>
+        <label><input type="checkbox" id="sound"> Sonido y vibración</label>
+        <label><input type="checkbox" id="slow"> Ver animación despacio</label>
+        <button class="reset" id="reset">Borrar partida</button>
+      </div>
+    </div>
+  </div>
+</main>
+<div id="hammer"></div>
+<div class="toasts" id="toasts"></div>
+<script>
+/* ======================================================================
+   TEXTURAS — cambia estos SVG para dar otro aspecto a personajes/tronco
+   ====================================================================== */
+const EYES=['#ff5f9e','#5fb0ff','#ffd24a','#5fd9a8','#b78cff','#ff8a5f','#ff5f9e','#5fb0ff'];
+/* Casco del castor con casco: se cae al primer golpe */
+const HELMET=`<g class="helmet"><path d="M20 42Q22 8 60 8Q98 8 100 42Z" fill="#ffd24a"/><rect x="12" y="37" width="96" height="10" rx="5" fill="#ffc21a"/><path d="M60 9v28M44 14v24M76 14v24" fill="none" stroke-width="1.6"/></g>`;
+const beaver=(b1,b2,casco)=>`<svg viewBox="0 0 120 120" aria-hidden="true"><g stroke="#4a2c3a" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"><circle cx="26" cy="28" r="12" fill="var(--m)"/><circle cx="94" cy="28" r="12" fill="var(--m)"/><circle cx="26" cy="28" r="6" fill="#ffb3cc" stroke="none"/><circle cx="94" cy="28" r="6" fill="#ffb3cc" stroke="none"/><ellipse cx="60" cy="58" rx="50" ry="40" fill="var(--m)"/><ellipse cx="60" cy="71" rx="25" ry="17" fill="#fbe8d3" stroke="none"/><g class="teeth"><rect x="52" y="70" width="16" height="16" rx="4" fill="#fff"/><path d="M60 71v14" fill="none" stroke-width="1.6"/></g><ellipse cx="60" cy="63" rx="6" ry="4" fill="#4a2c3a"/><ellipse cx="38" cy="56" rx="4.2" ry="5.6" fill="${b1}" stroke="#4a2c3a" stroke-width="1"/><ellipse cx="82" cy="56" rx="4.2" ry="5.6" fill="${b2}" stroke="#4a2c3a" stroke-width="1"/><circle cx="36.8" cy="53.8" r="1.5" fill="#fff" stroke="none"/><circle cx="80.8" cy="53.8" r="1.5" fill="#fff" stroke="none"/><ellipse cx="26" cy="68" rx="8" ry="4.5" fill="#ff9fbd" opacity=".75" stroke="none"/><ellipse cx="94" cy="68" rx="8" ry="4.5" fill="#ff9fbd" opacity=".75" stroke="none"/><path d="M20 58L3 53M20 64L1 64M20 70L3 76M100 58l17-5M100 64l19 0M100 70l17 6" fill="none" stroke-width="1.8"/><g class="twig"><rect x="22" y="81" width="76" height="14" rx="7" fill="#d9a06b"/><ellipse cx="29" cy="88" rx="3.5" ry="5" fill="#f6d7a7" stroke-width="1.5"/><ellipse cx="91" cy="88" rx="3.5" ry="5" fill="#f6d7a7" stroke-width="1.5"/><path d="M44 85v6M76 84v6" fill="none" stroke-width="1.5"/></g><circle cx="30" cy="93" r="8" fill="var(--m)"/><circle cx="90" cy="93" r="8" fill="var(--m)"/><path d="M27 97v-4M33 97v-4M87 97v-4M93 97v-4" fill="none" stroke-width="1.3"/>${casco?HELMET:''}</g><circle class="chip" cx="16" cy="80" r="2.6" fill="#f6d7a7" stroke="#4a2c3a" stroke-width="1" style="--dx:-6px"/><circle class="chip" cx="104" cy="80" r="2.6" fill="#f6d7a7" stroke="#4a2c3a" stroke-width="1"/></svg>`;
+/* Erizo: ¡no hay que golpearlo! Púas generadas en abanico sobre la cabeza */
+const ERIZO=(()=>{
+  let sp='';
+  for(let i=0;i<=12;i++){
+    const a=Math.PI*(1+i/12),p=(rx,ry,d)=>(60+Math.cos(a+d)*rx).toFixed(1)+' '+(64+Math.sin(a+d)*ry).toFixed(1);
+    sp+=`M${p(44,32,-.14)}L${p(58,48,0)}L${p(44,32,.14)}Z`;
+  }
+  return `<svg viewBox="0 0 120 120" aria-hidden="true"><g stroke="#4a2c3a" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"><path d="${sp}" fill="#7a4a30"/><ellipse cx="60" cy="66" rx="46" ry="32" fill="#8f5a3a"/><ellipse cx="60" cy="74" rx="30" ry="21" fill="#f6dcc0"/><path d="M42 60l10 4M78 60l-10 4" fill="none"/><ellipse cx="48" cy="69" rx="3.6" ry="4.6" fill="#4a2c3a" stroke="none"/><ellipse cx="72" cy="69" rx="3.6" ry="4.6" fill="#4a2c3a" stroke="none"/><circle cx="46.8" cy="67.4" r="1.2" fill="#fff" stroke="none"/><circle cx="70.8" cy="67.4" r="1.2" fill="#fff" stroke="none"/><circle cx="60" cy="80" r="4.5" fill="#4a2c3a"/><ellipse cx="40" cy="82" rx="6" ry="3.5" fill="#ff9fbd" opacity=".75" stroke="none"/><ellipse cx="80" cy="82" rx="6" ry="3.5" fill="#ff9fbd" opacity=".75" stroke="none"/><path d="M54 88q6 4 12 0" fill="none"/><circle cx="38" cy="96" r="7" fill="#f6dcc0"/><circle cx="82" cy="96" r="7" fill="#f6dcc0"/></g></svg>`;
+})();
+const FLORES=['#ff9fc7','#ffffff','#9fd7ff','#ffd28a'];
+const FLOWER=c=>`<svg viewBox="0 0 20 20" aria-hidden="true"><g stroke="#4a2c3a" stroke-width="1"><circle cx="10" cy="6" r="3.4" fill="${c}"/><circle cx="15" cy="10" r="3.4" fill="${c}"/><circle cx="10" cy="14" r="3.4" fill="${c}"/><circle cx="5" cy="10" r="3.4" fill="${c}"/><circle cx="10" cy="10" r="3" fill="#ffe27a"/></g></svg>`;
+const LEAF=c=>`<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2C4 6 4 14 10 18C16 14 16 6 10 2Z" fill="${c}" stroke="#4a2c3a" stroke-width="1"/><path d="M10 4V17" stroke="#4a2c3a" stroke-width="1"/></svg>`;
+const SNOW=`<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="6" fill="#fff" stroke="#b9d4ea" stroke-width="1.5"/></svg>`;
+const SPARK=`<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 1L12 8L19 10L12 12L10 19L8 12L1 10L8 8Z" fill="#fff59e" stroke="#e0b83a" stroke-width="1"/></svg>`;
+/* Martillo: cambia de aspecto según el nivel de la mejora "Martillo de nube" */
+const HAMMER=[
+ `<svg viewBox="0 0 64 64"><g stroke="#4a2c3a" stroke-width="2.4" stroke-linejoin="round"><rect x="28" y="22" width="9" height="38" rx="4.5" fill="#d9a566"/><rect x="14" y="6" width="36" height="22" rx="6" fill="#a9713a"/><rect x="14" y="6" width="8" height="22" rx="4" fill="#8a5a2c"/><rect x="42" y="6" width="8" height="22" rx="4" fill="#8a5a2c"/></g></svg>`,
+ `<svg viewBox="0 0 64 64"><g stroke="#4a2c3a" stroke-width="2.4" stroke-linejoin="round"><rect x="28" y="24" width="9" height="36" rx="4.5" fill="#f6c48a"/><rect x="10" y="6" width="44" height="26" rx="9" fill="#ff8fb8"/><rect x="10" y="6" width="10" height="26" rx="5" fill="#ff6fa5"/><rect x="44" y="6" width="10" height="26" rx="5" fill="#ff6fa5"/><path d="M32 11l2.3 5 5.4.6-4 3.7 1.1 5.3-4.8-2.7-4.8 2.7 1.1-5.3-4-3.7 5.4-.6z" fill="#fff8e7" stroke-width="1.4"/></g></svg>`,
+ `<svg viewBox="0 0 64 64"><g stroke="#4a2c3a" stroke-width="2.4" stroke-linejoin="round"><rect x="28" y="24" width="9" height="36" rx="4.5" fill="#ffe08a"/><rect x="10" y="6" width="44" height="26" rx="9" fill="#ff6fc0"/><rect x="10" y="6" width="10" height="26" rx="5" fill="#ffd24a"/><rect x="44" y="6" width="10" height="26" rx="5" fill="#ffd24a"/><path d="M32 9l3 6 6.6.7-4.8 4.4 1.3 6.4-5.8-3.3-5.8 3.3 1.3-6.4-4.8-4.4 6.6-.7z" fill="#fff" stroke-width="1.4"/><g stroke="none" fill="#fff59e"><circle cx="8" cy="10" r="2"/><circle cx="58" cy="14" r="1.6"/><circle cx="52" cy="4" r="1.4"/></g></g></svg>`
+];
+/* Conejito ayudante con cesta, debajo del marcador a la izquierda */
+const BUNNY=`<svg viewBox="0 0 90 90" aria-hidden="true"><g stroke="#4a2c3a" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><g class="ear" style="transform-origin:38px 26px"><ellipse cx="35" cy="12" rx="7" ry="17" fill="#fff8ef"/><ellipse cx="35" cy="13" rx="3.4" ry="11" fill="#ffc4dc" stroke="none"/></g><g class="ear" style="transform-origin:52px 26px"><ellipse cx="55" cy="12" rx="7" ry="17" fill="#fff8ef"/><ellipse cx="55" cy="13" rx="3.4" ry="11" fill="#ffc4dc" stroke="none"/></g><ellipse cx="45" cy="60" rx="25" ry="21" fill="#fff8ef"/><circle cx="45" cy="35" r="17" fill="#fff8ef"/><path d="M38 35q7 6 14 0" fill="none"/><circle cx="38" cy="31" r="1.6" fill="#4a2c3a" stroke="none"/><circle cx="52" cy="31" r="1.6" fill="#4a2c3a" stroke="none"/><ellipse cx="33" cy="38" rx="4.5" ry="2.6" fill="#ffb3cc" opacity=".8" stroke="none"/><ellipse cx="57" cy="38" rx="4.5" ry="2.6" fill="#ffb3cc" opacity=".8" stroke="none"/><path d="M30 74q15 10 30 0" fill="#c9924f" stroke-width="2.2"/><path d="M27 68h36l-4 12a4 4 0 01-4 3H35a4 4 0 01-4-3z" fill="#c9924f"/><path d="M33 68q6-8 12 0M45 68q6-8 12 0" fill="none" stroke-width="1.6"/><circle cx="38" cy="66" r="3.5" fill="#ff9fc7"/><circle cx="46" cy="64" r="3.5" fill="#ffe27a"/><circle cx="53" cy="67" r="3.5" fill="#9fd7ff"/></g><g class="pick" style="transform-origin:20px 78px"><circle cx="20" cy="78" r="3.4" fill="#ff9fc7" stroke="#4a2c3a" stroke-width="1"/></g></svg>`;
+/* Ardilla ayudante con bellota, debajo del marcador a la derecha (aparece al comprarla) */
+const SQUIRREL=`<svg viewBox="0 0 90 90" aria-hidden="true"><g stroke="#4a2c3a" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><path class="tail" d="M58 80C84 76 88 50 76 34C68 22 54 26 58 38C62 48 72 50 68 62C65 70 58 72 56 76Z" fill="#e0925a" style="transform-origin:58px 78px"/><ellipse cx="40" cy="62" rx="20" ry="19" fill="#d9844c"/><path d="M27 30L24 13L37 24Z" fill="#d9844c"/><path d="M53 30L56 13L43 24Z" fill="#d9844c"/><circle cx="40" cy="36" r="16" fill="#d9844c"/><ellipse cx="40" cy="42" rx="9" ry="7" fill="#fbe8d3" stroke="none"/><circle cx="34" cy="33" r="1.8" fill="#4a2c3a" stroke="none"/><circle cx="46" cy="33" r="1.8" fill="#4a2c3a" stroke="none"/><circle cx="40" cy="40" r="1.8" fill="#4a2c3a" stroke="none"/><ellipse cx="29" cy="40" rx="4" ry="2.4" fill="#ffb3cc" opacity=".8" stroke="none"/><ellipse cx="51" cy="40" rx="4" ry="2.4" fill="#ffb3cc" opacity=".8" stroke="none"/><ellipse cx="40" cy="66" rx="11" ry="10" fill="#fbe8d3" stroke="none"/><ellipse cx="40" cy="64" rx="6" ry="7" fill="#b8763e"/><path d="M33 60q7-6 14 0z" fill="#7a4a26"/></g></svg>`;
+/* Tronco. Los mordiscos recortan el tronco de verdad (máscara): se ve el césped a través,
+   con borde de dientes y madera clara. BITES = [x, y, radio] de cada mordisco, en orden de aparición */
+const BITES=[[16,62,11],[104,70,10],[17,91,10],[103,94,9]];
+const biteShape=(cx,cy,R,n=7)=>{ // círculo hecho de semicírculos hacia fuera = huella de dientes
+  const rs=(R*Math.sin(Math.PI/n)).toFixed(2);let d='';
+  for(let k=0;k<=n;k++){const a=2*Math.PI*k/n-Math.PI/2,x=(cx+R*Math.cos(a)).toFixed(2),y=(cy+R*Math.sin(a)).toFixed(2);d+=k?`A${rs} ${rs} 0 0 1 ${x} ${y}`:`M${x} ${y}`}
+  return d+'Z';
+};
+const LOG=`<svg viewBox="0 0 120 120" aria-hidden="true"><defs><mask id="logBites" maskUnits="userSpaceOnUse" x="0" y="0" width="120" height="120"><rect width="120" height="120" fill="#fff"/>${BITES.map((b,i)=>`<path class="bite" data-i="${i}" d="${biteShape(...b)}" fill="#000"/>`).join('')}</mask><clipPath id="logShape"><path d="M18 46V96Q18 108 60 108Q102 108 102 96V46Z"/><ellipse cx="60" cy="46" rx="42" ry="17"/></clipPath></defs><ellipse cx="60" cy="108" rx="44" ry="8" fill="#000" opacity=".12"/><g mask="url(#logBites)"><g stroke="#4a2c3a" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"><path d="M18 46V96Q18 108 60 108Q102 108 102 96V46Z" fill="#c68c5e"/><ellipse cx="60" cy="46" rx="42" ry="17" fill="#f6d7a7"/><ellipse cx="60" cy="46" rx="30" ry="11" fill="none" stroke-width="1.6"/><ellipse cx="60" cy="46" rx="17" ry="6" fill="none" stroke-width="1.6"/><path d="M30 62v20M90 60v18M74 58v12" fill="none" stroke="#a5693f" stroke-width="2"/><ellipse cx="46" cy="76" rx="3.4" ry="4.6" fill="#2b1a22" stroke="none"/><ellipse cx="74" cy="76" rx="3.4" ry="4.6" fill="#2b1a22" stroke="none"/><ellipse cx="38" cy="86" rx="7" ry="4" fill="#ff9fbd" opacity=".75" stroke="none"/><ellipse cx="82" cy="86" rx="7" ry="4" fill="#ff9fbd" opacity=".75" stroke="none"/><path class="mouth" d="M55 84q5 5 10 0" fill="none"/></g><g clip-path="url(#logShape)" fill="none" stroke-linejoin="round">${BITES.map((b,i)=>`<g class="bite" data-i="${i}"><path d="${biteShape(...b)}" stroke="#f6d7a7" stroke-width="7"/><path d="${biteShape(...b)}" stroke="#4a2c3a" stroke-width="3"/></g>`).join('')}</g></g></svg>`;
+
+/* ======================================================================
+   SONIDOS — sintetizados en el navegador, sin archivos
+   ====================================================================== */
+let AC=null;
+function ac(){
+  if(!AC){try{AC=new (window.AudioContext||window.webkitAudioContext)()}catch(e){}}
+  if(AC&&AC.state==='suspended')AC.resume();
+  return AC;
+}
+function tone(f,d,type,vol,when,f2){
+  if(S.mute)return;const a=ac();if(!a)return;
+  const t=a.currentTime+(when||0),o=a.createOscillator(),g=a.createGain();
+  o.type=type||'sine';o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);
+  g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(vol||.15,t+.01);g.gain.exponentialRampToValueAtTime(.0001,t+d);
+  o.connect(g).connect(a.destination);o.start(t);o.stop(t+d+.02);
+}
+const notes=(fs,step,type,vol)=>fs.forEach((f,i)=>tone(f,step*1.4,type,vol,i*step));
+const SFX={
+  hit:()=>tone(520,.12,'triangle',.18,0,880),
+  gold:()=>notes([784,988,1319,1568],.06,'triangle',.14),
+  combo:()=>notes([880,1175],.07,'sine',.12),
+  bite:()=>tone(160,.2,'square',.06,0,80),
+  clank:()=>{tone(1400,.08,'square',.06);tone(300,.12,'triangle',.12)},
+  erizo:()=>tone(260,.3,'sawtooth',.08,0,120),
+  buy:()=>notes([660,990],.07,'triangle',.14),
+  sticker:()=>notes([1047,1319,1568],.08,'sine',.12),
+  season:()=>notes([523,659,784,1047],.1,'triangle',.13),
+  over:()=>notes([523,440,349,262],.16,'triangle',.13),
+  win:()=>notes([523,659,784,1047,784,1047],.12,'triangle',.13)
+};
+function vib(p){if(S.mute)return;try{navigator.vibrate&&navigator.vibrate(p)}catch(e){}}
+
+/* ======================================================================
+   JUEGO
+   ====================================================================== */
+const $=s=>document.querySelector(s);
+const KEY='topitos-kawaii-v3',BASE_HP=5,ATT=5,PER_STAGE=25;
+const D={c:0,h:0,s:0,p:0,g:0,r:0,m:0,a:0,tot:0,t:0,won:false,att:ATT,round:0,best:0,bestCombo:0,golds:0,helms:0,dodges:0,maxStage:0,mute:false};
+const fresh=()=>Object.assign({},D,{ach:{},t:Date.now()});
+let S=fresh();
+try{const r=localStorage.getItem(KEY);if(r)S=Object.assign(fresh(),JSON.parse(r))}catch(e){}
+/* Mejoras: i = icono, c = nombre corto, e = explicación corta del botón, d = descripción larga (al pasar el ratón),
+   b = precio base, f = cuánto sube el precio por nivel, max = nivel máximo */
+const U=[
+ {k:'h',i:'🔨',c:'Martillo',e:'Más flores por golpe',n:'Martillo de nube',d:'Más flores por golpe',b:10,f:1.5,max:15},
+ {k:'s',i:'💨',c:'Movidos',e:'Salen más a menudo',n:'Castores más movidos',d:'Salen con más frecuencia',b:25,f:1.65,max:12},
+ {k:'p',i:'🐰',c:'Conejito',e:'Recoge flores solo',n:'Conejito ayudante',d:'Recoge flores solito, aunque no hagas clic',b:60,f:1.6,max:15},
+ {k:'g',i:'✨',c:'Estrellas',e:'Más castores dorados',n:'Polvo de estrellas',d:'Más suerte de castor dorado (x10)',b:40,f:1.75,max:15},
+ {k:'r',i:'🌳',c:'Tronco',e:'+1 corazón al tronco',n:'Tronco resistente',d:'+1 corazón en el tronco',b:150,f:3,max:3},
+ {k:'m',i:'🧲',c:'Imán',e:'Flores de los que escapan',n:'Imán de flores',d:'Los castores que escapan dejan flores (+10% por nivel)',b:120,f:2.2,max:5},
+ {k:'a',i:'🐿️',c:'Ardilla',e:'Tira bellotas a castores',n:'Ardilla lanzabellotas',d:'Tira bellotas a los castores (nunca a los erizos); más nivel, más a menudo',b:400,f:1.7,max:10}
+];
+const val=()=>1+S.h;
+const cost=u=>Math.ceil(u.b*Math.pow(u.f,S[u.k]));
+const ips=()=>S.p*.5*val();
+const goldP=()=>Math.min(.5,.05+.03*S.g);
+const gap=()=>Math.max(350,1300-S.s*950/12); // llega justo a 350 ms en el nivel 12
+const hpMax=()=>BASE_HP+S.r;
+const stage=()=>Math.floor(S.round/PER_STAGE);
+const hard=()=>Math.pow(.95,Math.min(stage(),8)); // cada estación, todo un 5% más rápido
+const comboMult=n=>Math.min(5,1+Math.floor(n/5)); // x2 a los 5 seguidos, x3 a los 10… hasta x5
+const fmt=n=>n>=1e6?(n/1e6).toFixed(1)+'M':n>=1e3?(n/1e3).toFixed(1)+'k':String(Math.floor(n));
+/* Solo tocan la página si el texto cambia: render() va 10 veces por segundo */
+const setText=(el,t)=>{if(el.textContent!==t)el.textContent=t};
+const setHTML=(el,h)=>{if(el._h!==h){el._h=h;el.innerHTML=h}};
+function toast(t){const e=document.createElement('div');e.className='toast';e.textContent=t;$('#toasts').appendChild(e);setTimeout(()=>e.remove(),3500)}
+
+/* Estaciones: cada 25 castores seguidos en una ronda. Cada una trae un personaje nuevo */
+const SEASONS=[
+ {k:'pri',n:'Primavera',wx:i=>FLOWER(FLORES[i%FLORES.length])},
+ {k:'ver',n:'Verano',wx:()=>SPARK,msg:'¡Llega el verano! Aparecen erizos: ¡no los golpees!'},
+ {k:'oto',n:'Otoño',wx:i=>LEAF(['#e8843c','#d9573a','#f0b23c'][i%3]),msg:'¡Llega el otoño! Castores bebé, rapidísimos (x2 flores)'},
+ {k:'inv',n:'Invierno',wx:()=>SNOW,msg:'¡Llega el invierno! Castores con casco: necesitan 2 golpes (x3 flores)'}
+];
+
+/* Pegatinas: se ganan una vez y quedan guardadas para siempre */
+const A=[
+ {id:'c1',e:'🌸',n:'Primer castor',t:()=>S.tot>=1},
+ {id:'buy',e:'🛍️',n:'Primera mejora',t:()=>U.some(u=>S[u.k]>0)},
+ {id:'gold',e:'⭐',n:'Castor dorado',t:()=>S.golds>=1},
+ {id:'c100',e:'💯',n:'100 castores',t:()=>S.tot>=100},
+ {id:'combo10',e:'🔥',n:'Combo de 10',t:()=>S.bestCombo>=10},
+ {id:'ver',e:'☀️',n:'Llegar al verano',t:()=>S.maxStage>=1},
+ {id:'erizo',e:'🦔',n:'Esquivar 10 erizos',t:()=>S.dodges>=10},
+ {id:'oto',e:'🍂',n:'Llegar al otoño',t:()=>S.maxStage>=2},
+ {id:'helm',e:'⛑️',n:'Rompecascos',t:()=>S.helms>=1},
+ {id:'inv',e:'❄️',n:'Llegar al invierno',t:()=>S.maxStage>=3},
+ {id:'combo30',e:'🌈',n:'Combo de 30',t:()=>S.bestCombo>=30},
+ {id:'rec100',e:'🎀',n:'100 en una ronda',t:()=>S.best>=100},
+ {id:'c1000',e:'🏆',n:'1000 castores',t:()=>S.tot>=1000},
+ {id:'rich',e:'💐',n:'10.000 flores',t:()=>S.c>=10000},
+ {id:'win',e:'👑',n:'Todo al máximo',t:()=>S.won}
+];
+
+let hp=hpMax(),over=false,paused=false,hold=false,started=false,overAt=0,slow=false,combo=0,curStage=stage(),pauseTimer=null;
+const field=$('#field'),weather=$('#weather'),cells=[];
+const logEl=document.createElement('div');logEl.className='log';logEl.innerHTML=LOG+'<div class="hp"></div>';
+const attpill=$('#attpill');
+const bites=[...logEl.querySelectorAll('.bite')];
+const mouth=logEl.querySelector('.mouth');
+const MOUTH={happy:'M55 84q5 5 10 0',neutral:'M55 86h10',sad:'M55 89q5 -5 10 0'};
+const cls=c=>(c.gold?' gold':'')+(c.type!=='normal'?' '+c.type:'');
+/* paused = tronco roto (3 s); hold = pausa del jugador o por cambiar de pestaña */
+const playing=()=>started&&!over&&!paused&&!hold;
+/* Tecla de cada casilla, como en el teclado numérico: 7 8 9 arriba, 1 2 3 abajo (el 5 es el tronco) */
+const KEYS=['7','8','9','4','5','6','1','2','3'],byKey={};
+for(let i=0,n=0;i<9;i++){
+  if(i===4){field.appendChild(logEl);continue}
+  const el=document.createElement('div');el.className='hole';el.tabIndex=0;el.setAttribute('role','button');el.setAttribute('aria-label','Agujero '+(n+1));
+  el.innerHTML='<div class="pit"><div class="mole"></div></div><div class="back"></div><div class="lip"></div><div class="key">'+KEYS[i]+'</div>'
+    +'<div class="flower a">'+FLOWER(FLORES[n%FLORES.length])+'</div>'
+    +'<div class="flower b">'+FLOWER(FLORES[(n+2)%FLORES.length])+'</div>';
+  const c={el,m:el.querySelector('.mole'),eye:EYES[n],type:'normal',up:false,hit:false,busy:false,hits:0,to:null,bt:null};
+  n++;
+  el.addEventListener('pointerdown',()=>whack(c));
+  el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();whack(c)}});
+  // el propio castor gestiona el final de cada animación de un solo ciclo
+  c.m.addEventListener('animationend',ev=>{
+    if(ev.animationName==='rise'&&c.up) c.m.className='mole mole--idle'+cls(c);
+    if(ev.animationName==='hide'||ev.animationName==='hit'){c.m.className='mole';c.busy=false}
+  });
+  field.appendChild(el);cells.push(c);byKey[KEYS[i]]=c;
+}
+/* "busy": el agujero está terminando una animación y no puede salir otro castor todavía */
+function setBusy(c){c.busy=true;clearTimeout(c.bt);c.bt=setTimeout(()=>c.busy=false,1000)}
+function float(el,t,k){const f=document.createElement('div');f.className='fl'+(k?' '+k:'');f.textContent=t;el.appendChild(f);setTimeout(()=>f.remove(),1000)}
+
+function renderLog(){
+  const mx=hpMax();
+  logEl.classList.toggle('gnaw',!over&&!paused&&cells.some(c=>c.up&&!c.hit&&c.type!=='erizo'));
+  logEl.classList.toggle('broken',over||paused);
+  setText(logEl.querySelector('.hp'),'♥'.repeat(hp)+'♡'.repeat(mx-hp));
+  const se=SEASONS[stage()%4];
+  setHTML(attpill,'Intentos: '+S.att+' · '+se.n+(stage()>=4?' '+(stage()+1):'')+' '+(S.round%PER_STAGE)+'/'+PER_STAGE
+    +(combo>=2?'<br><span class="cmb">Combo '+combo+(comboMult(combo)>1?' · x'+comboMult(combo):'')+'</span>':''));
+  const shown=Math.ceil(BITES.length*(mx-hp)/mx);
+  bites.forEach(b=>b.style.opacity=shown>+b.dataset.i?'1':'0');
+  mouth.setAttribute('d', hp/mx<=.25?MOUTH.sad : hp/mx<=.6?MOUTH.neutral : MOUTH.happy);
+}
+function setSeason(){
+  const se=SEASONS[stage()%4];
+  if(field.dataset.season===se.k)return;
+  field.dataset.season=se.k;
+  weather.innerHTML='';
+  for(let i=0;i<9;i++){
+    const w=document.createElement('div');w.className='wx';w.innerHTML=se.wx(i);
+    w.style.left=(Math.random()*95)+'%';
+    const d=5+Math.random()*4;w.style.animationDuration=d+'s';w.style.animationDelay=(-Math.random()*d)+'s';
+    weather.appendChild(w);
+  }
+}
+function hideAll(){cells.forEach(c=>{clearTimeout(c.to);c.up=false;c.busy=false;c.m.className='mole'})}
+function bite(){
+  if(over||paused||slow)return; // en modo lento no hay penalización, es solo para mirar
+  hp--;SFX.bite();vib(40);
+  if(hp<=0){
+    hp=0;hideAll();
+    S.att--;
+    if(S.att<=0) gameOver();
+    else{
+      paused=true;
+      toast('¡Se rompió el tronco! Te quedan '+S.att+' intentos');
+      pauseTimer=setTimeout(()=>{hp=hpMax();paused=false;renderLog()},3200);
+    }
+    save();
+  }
+  renderLog();
+}
+function pop(c){
+  c.up=true;c.hit=false;c.hits=0;
+  const st=stage(),r=Math.random();
+  c.type=st>=1&&r<.12?'erizo':st>=2&&r<.24?'bebe':st>=3&&r<.34?'casco':'normal';
+  c.gold=c.type==='normal'&&Math.random()<goldP();
+  // el dibujo solo se rehace si cambia de personaje; si no, basta con volver a ponerle el casco
+  const kind=c.type==='erizo'?'erizo':c.type==='casco'?'casco':'castor';
+  if(c.kind!==kind){c.kind=kind;c.m.innerHTML=kind==='erizo'?ERIZO:beaver(c.eye,c.eye,kind==='casco')}
+  else if(kind==='casco')c.m.querySelector('.helmet').classList.remove('off');
+  c.m.className='mole mole--rising'+cls(c);
+  const k={bebe:.6,casco:1.3,erizo:1.1}[c.type]||1;
+  const stay=slow?6000:1300*hard()*k;c.dl=performance.now()+stay; // dl = cuándo se escapará
+  c.to=setTimeout(()=>escape(c),stay);
+  renderLog();
+}
+function escape(c){
+  if(!c.up||c.hit)return;
+  c.up=false;setBusy(c);c.m.className='mole mole--hiding'+cls(c);
+  if(c.type==='erizo'){S.dodges++;renderLog();return} // el erizo se va sin morder
+  if(S.m>0&&!over&&!paused){const g=val()*.1*S.m;S.c+=g;float(c.el,'+'+fmt(g)+' ✿','small')}
+  combo=0;
+  bite();
+}
+/* auto = golpe de una bellota de la ardilla: da flores pero no suma ni rompe tu combo */
+function whack(c,auto){
+  if(!c.up){
+    // tocar un agujero vacío rompe el combo
+    if(!c.busy&&playing()&&combo){combo=0;renderLog()}
+    return;
+  }
+  if(c.type==='erizo'){
+    c.hit=true;c.up=false;clearTimeout(c.to);setBusy(c);c.m.className='mole mole--hit'+cls(c);
+    const loss=Math.min(S.c,val()*5);S.c-=loss;combo=0;
+    SFX.erizo();vib([30,40,30]);float(c.el,'¡Pincha! -'+fmt(loss)+' ✿','bad');
+    render();renderLog();return;
+  }
+  if(c.type==='casco'&&c.hits===0){
+    c.hits=1;c.m.querySelector('.helmet').classList.add('off');
+    SFX.clank();if(!auto)vib(20);float(c.el,'¡Clonk!','small');
+    const stay=slow?6000:800;c.dl=performance.now()+stay;
+    clearTimeout(c.to);c.to=setTimeout(()=>escape(c),stay);
+    return;
+  }
+  c.hit=true;c.up=false;clearTimeout(c.to);setBusy(c);
+  const before=comboMult(combo);
+  if(!auto){combo++;S.bestCombo=Math.max(S.bestCombo,combo)}
+  const cm=auto?1:comboMult(combo),tm=c.gold?10:c.type==='bebe'?2:c.type==='casco'?3:1;
+  const v=val()*tm*cm;S.c+=v;S.tot++;S.round++;
+  if(c.gold)S.golds++;
+  if(c.type==='casco')S.helms++;
+  c.m.className='mole mole--hit'+cls(c);
+  float(c.el,(auto?'🌰 ':'')+'+'+fmt(v)+' ✿'+(cm>1?' x'+cm:''));
+  c.gold?SFX.gold():SFX.hit();if(!auto)vib(15);
+  if(!auto&&cm>before){SFX.combo();float(field,'¡Combo x'+cm+'!','big')}
+  const st=stage();
+  if(st>curStage){
+    curStage=st;S.maxStage=Math.max(S.maxStage,st);setSeason();SFX.season();
+    toast(SEASONS[st%4].msg||'¡Nivel '+(st+1)+'! Todo va un poco más rápido');
+  }
+  render();renderLog();
+}
+function spawn(){
+  const free=cells.filter(c=>!c.up&&!c.busy);
+  if(playing()&&free.length)pop(free[Math.random()*free.length|0]);
+  setTimeout(spawn,gap()*hard()*(slow?4:1)*(.6+Math.random()*.8));
+}
+setInterval(()=>{if(playing()&&hp<hpMax()){hp++;renderLog()}},4000);
+
+/* Ardilla: cada cierto tiempo tira una bellota a un castor que esté fuera (nunca a un erizo) */
+const acornEvery=()=>Math.max(1200,6000-S.a*500); // nivel 1: cada 5,5 s · nivel 10: cada 1,2 s
+const ACORN=`<svg viewBox="0 0 20 20" aria-hidden="true"><g stroke="#4a2c3a" stroke-width="1.4" stroke-linejoin="round"><ellipse cx="10" cy="12" rx="5.5" ry="6.5" fill="#b8763e"/><path d="M3.5 9q6.5-7 13 0z" fill="#7a4a26"/><path d="M10 3.5v-2" fill="none"/></g></svg>`;
+function throwAcorn(){
+  if(S.a>0&&playing()&&!slow){
+    const targets=cells.filter(c=>c.up&&!c.hit&&c.type!=='erizo'&&!c.aimed);
+    if(targets.length){
+      // apunta al que antes se va a escapar, siempre que la bellota llegue a tiempo (vuela 450 ms)
+      const now=performance.now(),soon=(a,b)=>a.dl-b.dl;
+      const c=(targets.filter(t=>t.dl-now>480).sort(soon)[0])||targets.sort(soon)[0];c.aimed=true;
+      const a=helper2.getBoundingClientRect(),b=c.el.getBoundingClientRect();
+      const x0=a.left+a.width*.45,y0=a.top+a.height*.7,x1=b.left+b.width/2,y1=b.top+b.height*.45;
+      const n=document.createElement('div');n.className='acorn';n.innerHTML=ACORN;document.body.appendChild(n);
+      // vuelo en arco: sube un poco y cae sobre el castor
+      const r=19,mid=`translate(${(x0+x1)/2-r}px,${Math.min(y0,y1)-60}px) rotate(200deg) scale(1.15)`; // r = mitad del tamaño de la bellota
+      n.animate([{transform:`translate(${x0-r}px,${y0-r}px) rotate(0) scale(.8)`},{transform:mid},{transform:`translate(${x1-r}px,${y1-r}px) rotate(400deg) scale(1)`}],{duration:450,easing:'ease-in',fill:'forwards'});
+      setTimeout(()=>{n.remove();c.aimed=false;if(c.up&&!c.hit)whack(c,true)},450);
+    }
+  }
+  setTimeout(throwAcorn,acornEvery());
+}
+
+$('#slow').addEventListener('change',e=>{slow=e.target.checked});
+const snd=$('#sound');snd.checked=!S.mute;
+snd.addEventListener('change',e=>{S.mute=!e.target.checked;if(!S.mute){ac();SFX.buy()}save()});
+
+/* Pausa: esconde los castores (sin morder) y congela castores, ardilla y corazones */
+const pz=document.createElement('div');pz.className='over';
+pz.innerHTML='<b>PAUSA</b><span>Los castores esperan escondidos</span><small>Toca (o pulsa P) para seguir</small>';
+function pauseGame(){if(!started||over||hold)return;hold=true;hideAll();pz.classList.add('show');setText(pauseBtn,'▶ Seguir');renderLog()}
+function resumeGame(){if(!hold)return;hold=false;pz.classList.remove('show');setText(pauseBtn,'⏸ Pausa');renderLog()}
+pz.addEventListener('click',resumeGame);
+field.appendChild(pz);
+const pauseBtn=$('#pause');pauseBtn.addEventListener('click',()=>hold?resumeGame():pauseGame());
+
+/* Modo ratón / teclado: en modo teclado cada agujero se golpea con su número (teclado numérico o fila de números) */
+const modeBtn=$('#mode');
+function setMode(){document.body.classList.toggle('kbd',!!S.kbd);setText(modeBtn,S.kbd?'⌨️ Teclado':'🖱️ Ratón');modeBtn.title=S.kbd?'Cambiar a ratón':'Cambiar a teclado (teclas 1-9)'}
+modeBtn.addEventListener('click',()=>{S.kbd=!S.kbd;setMode();save();modeBtn.blur()});
+addEventListener('keydown',e=>{
+  if(e.repeat)return;
+  if(e.key==='p'||e.key==='P'||e.key==='Escape'){hold?resumeGame():pauseGame();return}
+  if(!S.kbd)return;
+  if(!started&&(e.key==='Enter'||e.key===' ')){e.preventDefault();st0.click();return}
+  const k=/^(Digit|Numpad)([1-9])$/.exec(e.code),c=k&&byKey[k[2]];
+  if(!c)return;
+  e.preventDefault();
+  // el martillo baja sobre el agujero pulsado
+  const r=c.el.getBoundingClientRect();hx=r.left+r.width*.62;hy=r.top+r.height*.4;ham.classList.add('on');ang=24;place();setTimeout(()=>{ang=-28;place()},110);
+  whack(c);
+});
+
+/* Pantalla de inicio */
+const st0=document.createElement('div');st0.className='over start show';
+st0.innerHTML='<b>Castorcitos ♡</b><span>Golpea a los castores antes de que muerdan el tronco.</span><span>Si sale un erizo, ¡déjalo en paz!</span><span class="rec" id="startbest"></span><small>¡Jugar!</small>';
+st0.addEventListener('click',()=>{ac();started=true;st0.classList.remove('show');renderLog()});
+field.appendChild(st0);
+
+/* Fin de ronda: se guardan las flores y las mejoras, solo empieza otra ronda */
+const ov=document.createElement('div');ov.className='over';
+ov.innerHTML='<b>¡FIN DE RONDA!</b><span>Se acabaron los intentos</span><span>Castores en esta ronda: <em id="round">0</em></span><span class="rec" id="rec"></span><span>Tus flores y mejoras se quedan ✿</span><small>Toca para otra ronda</small>';
+ov.addEventListener('click',()=>{if(over&&Date.now()-overAt>=500)newRound()});
+field.appendChild(ov);
+function gameOver(){
+  over=true;overAt=Date.now();combo=0;
+  const rec=S.round>S.best;S.best=Math.max(S.best,S.round);
+  win.classList.remove('show');
+  ov.querySelector('#round').textContent=S.round;
+  ov.querySelector('#rec').textContent=rec?'¡Nuevo récord! ✿':'Récord: '+S.best;
+  ov.classList.add('show');SFX.over();vib([60,60,120]);
+}
+function newRound(){
+  clearTimeout(pauseTimer);hideAll();
+  S.att=ATT;S.round=0;curStage=0;hp=hpMax();over=false;paused=false;combo=0;
+  ov.classList.remove('show');setSeason();save();renderLog();render();
+}
+
+const win=document.createElement('div');win.className='over win';
+win.innerHTML='<b>¡GANASTE! ✿</b><span>¡Subiste todas las mejoras al máximo!</span><small>Toca para seguir jugando</small><div class="petals"></div>';
+const petals=win.querySelector('.petals');
+for(let i=0;i<16;i++){
+  const p=document.createElement('div');p.className='petal';
+  p.innerHTML=FLOWER(FLORES[i%FLORES.length]);
+  p.style.left=(Math.random()*100)+'%';
+  p.style.animationDelay=(Math.random()*2.4)+'s';
+  p.style.animationDuration=(2+Math.random()*1.6)+'s';
+  petals.appendChild(p);
+}
+win.addEventListener('click',()=>win.classList.remove('show'));
+field.appendChild(win);
+function checkWin(){
+  if(!S.won&&!over&&U.every(u=>S[u.k]>=u.max)){S.won=true;save();win.classList.add('show');SFX.win()}
+}
+
+const helper=$('#helper');helper.innerHTML=BUNNY;
+const helper2=$('#helper2');helper2.innerHTML=SQUIRREL;
+const ham=$('#hammer');let hx=0,hy=0,ang=-28,hammerLvl=-1;
+const place=()=>ham.style.transform=`translate(${hx-32}px,${hy-19}px) rotate(${ang}deg)`;
+field.addEventListener('pointermove',e=>{if(e.pointerType!=='mouse')return;hx=e.clientX;hy=e.clientY;ham.classList.add('on');place()});
+field.addEventListener('pointerleave',()=>ham.classList.remove('on'));
+field.addEventListener('pointerdown',e=>{if(e.pointerType!=='mouse')return;ang=24;place();setTimeout(()=>{ang=-28;place()},110)});
+
+const ups=$('#ups');
+U.forEach(u=>{
+  const b=document.createElement('button');b.className='up';
+  b.innerHTML='<span class="ic" aria-hidden="true">'+u.i+'</span><span class="tx"><strong></strong><small>'+u.e+'</small></span><span class="price"></span>';
+  b.title=u.n+': '+u.d;
+  b.addEventListener('click',()=>{
+    const p=cost(u);if(S[u.k]>=u.max||S.c<p)return;
+    S.c-=p;S[u.k]++;SFX.buy();
+    if(u.k==='r'){hp=Math.min(hpMax(),hp+1);renderLog()}
+    render();checkWin();
+  });
+  ups.appendChild(b);u.el=b;u.nEl=b.querySelector('strong');u.pEl=b.querySelector('.price');
+});
+const coinsEl=$('#coins'),ipsEl=$('#ips'),totEl=$('#tot'),startBest=$('#startbest');
+
+const stk=$('#stk');
+A.forEach(a=>{
+  const b=document.createElement('button');b.className='st';
+  b.addEventListener('click',()=>toast(S.ach[a.id]?a.e+' '+a.n:'🔒 '+a.n));
+  stk.appendChild(b);a.el=b;
+});
+function renderStickers(){
+  let n=0;
+  A.forEach(a=>{const on=!!S.ach[a.id];n+=on;a.el.textContent=on?a.e:'?';a.el.classList.toggle('lock',!on);a.el.title=a.n;a.el.setAttribute('aria-label',a.n+(on?'':' (bloqueada)'))});
+  $('#stcount').textContent=n+'/'+A.length;
+}
+function checkAch(){
+  A.forEach(a=>{
+    if(S.ach[a.id]||!a.t())return;
+    S.ach[a.id]=true;renderStickers();
+    a.el.classList.remove('new');void a.el.offsetWidth;a.el.classList.add('new');
+    toast('¡Pegatina nueva! '+a.e+' '+a.n);SFX.sticker();save();
+  });
+}
+
+function render(){
+  setText(coinsEl,fmt(S.c));
+  setText(ipsEl,ips().toFixed(ips()<10?1:0));
+  setText(totEl,fmt(S.tot));
+  U.forEach(u=>{
+    const p=cost(u),mx=S[u.k]>=u.max,dis=mx||S.c<p;
+    setText(u.nEl,u.c+' '+S[u.k]);
+    u.el.setAttribute('aria-label',u.n+', nivel '+S[u.k]+'. '+u.d);
+    setText(u.pEl,mx?'MÁX':fmt(p)+' ✿');
+    if(u.el.disabled!==dis)u.el.disabled=dis;
+    u.el.classList.toggle('max',mx);
+  });
+  const lvl=S.h===0?0:(S.h<4?1:2);
+  if(lvl!==hammerLvl){hammerLvl=lvl;ham.innerHTML=HAMMER[lvl]}
+  helper.classList.toggle('active',S.p>0);
+  helper.style.setProperty('--hs',Math.max(.4,1.5-S.p*.13)+'s');
+  helper2.classList.toggle('active',S.a>0);
+  setText(startBest,S.best?'Récord: '+S.best+' castores en una ronda':'');
+  checkAch();
+}
+function save(){S.t=Date.now();try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+
+const off=Math.min((Date.now()-S.t)/1000,28800);
+if(off>30&&ips()>0){const g=ips()*off*.5;S.c+=g;toast('Mientras no estabas, el conejito juntó '+fmt(g)+' ✿')}
+
+/* Borrar partida: lo deja todo como la primera vez (menos el sonido y el modo ratón/teclado) */
+const rb=$('#reset');let armed=0;
+rb.addEventListener('click',()=>{
+  if(!armed){armed=1;rb.textContent='¿Seguro? Toca otra vez';setTimeout(()=>{armed=0;rb.textContent='Borrar partida'},3000);return}
+  const mute=S.mute,kbd=S.kbd;S=fresh();S.mute=mute;S.kbd=kbd;armed=0;rb.textContent='Borrar partida';
+  clearTimeout(pauseTimer);hideAll();
+  hp=hpMax();over=false;paused=false;combo=0;curStage=0;
+  ov.classList.remove('show');win.classList.remove('show');resumeGame();
+  setSeason();save();renderStickers();render();renderLog();
+});
+
+setInterval(()=>{if(!over)S.c+=ips()/10;render()},100);
+setInterval(save,3000);
+addEventListener('pagehide',save);
+document.addEventListener('visibilitychange',()=>{if(document.hidden){save();pauseGame()}});
+setMode();setSeason();renderStickers();render();renderLog();spawn();throwAcorn();
+</script>
+</body>
+</html>
