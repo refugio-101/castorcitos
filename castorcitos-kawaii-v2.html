@@ -161,7 +161,7 @@ h1{margin:6px 0 10px;text-align:center;font-size:1.7rem;font-weight:600;color:va
 .helper.active .pick{animation:pickfl var(--hs,1.1s) ease-in-out infinite}
 .helper:not(.active) .pick{opacity:0}
 .helper2.active .tail{animation:tailwag .9s ease-in-out infinite}
-body.held .helper *,body.held .flower,body.held .weather .wx{animation-play-state:paused!important} /* en pausa, todo quieto */
+body.held:not(.mode-mem) .helper *,body.held:not(.mode-mem) .flower,body.held:not(.mode-mem) .weather .wx{animation-play-state:paused!important} /* en pausa, todo quieto */
 .acorn{position:fixed;left:0;top:0;width:38px;height:38px;pointer-events:none;z-index:40;filter:drop-shadow(0 2px 0 rgba(0,0,0,.25))}
 .acorn svg{display:block;width:100%}
 @keyframes earwig{0%,50%,100%{transform:rotate(0)}25%{transform:rotate(10deg)}75%{transform:rotate(-6deg)}}
@@ -203,7 +203,6 @@ body.kbd .key{display:block}
 .menu{position:fixed;inset:0;z-index:70;display:none;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:16px;overflow:auto;background:var(--bg) radial-gradient(var(--dots) 18%,transparent 20%) 0 0/28px 28px}
 .menu.show{display:flex}
 .menu h1{font-size:2.4rem;margin:0}
-.menu p{margin:0;font-weight:600;opacity:.85}
 .menu .rec{color:var(--fresa);font-weight:600;min-height:1.3em}
 .flor{width:min(92vw,62vh,500px);height:auto;overflow:visible}
 .flor text{font-family:"Fredoka","Trebuchet MS",sans-serif;font-weight:600;fill:#6b3f58;text-anchor:middle;pointer-events:none}
@@ -234,6 +233,37 @@ body.kbd .key{display:block}
 /* florecitas cayendo por el fondo del menú */
 .sky{position:absolute;inset:0;z-index:0;overflow:hidden;pointer-events:none;container-type:size}
 .sky .wx{width:28px}
+/* ======================================================================
+   MODALIDAD MEMORIA — fondo azul como su pétalo; sin mejoras ni ayudantes
+   ====================================================================== */
+body.mode-mem{--bg:#d6ecff;--dots:#bfe0ff}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) body.mode-mem{--bg:#1e3550;--dots:#274566;--card:#2c4a6b}}
+:root[data-theme="dark"] body.mode-mem{--bg:#1e3550;--dots:#274566;--card:#2c4a6b}
+.pill.mm,.mempill{display:none}
+body.mode-mem .pill.cl,body.mode-mem #attpill,body.mode-mem .helper,body.mode-mem .side h2,body.mode-mem .ups,
+body.mode-mem #pause,body.mode-mem .foot label:has(#slow),body.mode-mem .stickers{display:none!important}
+body.mode-mem .pill.mm,body.mode-mem .mempill{display:block}
+.hole.memonly{display:none}
+body.mode-mem .hole.memonly{display:block}
+body.mode-mem .log{display:none}
+body.mode-mem .field>.over:not(.memov),body:not(.mode-mem) .memov{display:none!important}
+/* cuenta atrás y avisos grandes en el centro del campo */
+.memcd{position:absolute;inset:0;z-index:9;display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:0;
+  font-family:"Sniglet","Fredoka",sans-serif;font-weight:800;font-size:4.5rem;color:var(--fresa);
+  text-shadow:3px 0 #fff,-3px 0 #fff,0 3px #fff,0 -3px #fff,2px 2px #fff,-2px 2px #fff,2px -2px #fff,-2px -2px #fff,0 6px 0 rgba(107,63,88,.35)}
+.memcd.pop{animation:cdpop .9s ease-out forwards}
+@keyframes cdpop{0%{transform:scale(.4);opacity:0}20%{transform:scale(1.15);opacity:1}70%{transform:scale(1);opacity:1}100%{transform:scale(1);opacity:0}}
+.mole.memok{animation:joy .55s ease-out}
+@keyframes joy{0%{transform:translateY(0) scale(1)}15%{transform:translateY(4%) scale(1.12,.86)}45%{transform:translateY(-32%) scale(.95,1.08) rotate(-7deg)}65%{transform:translateY(-30%) rotate(7deg)}85%{transform:translateY(0) scale(1.1,.9)}100%{transform:translateY(0) scale(1)}}
+.mole.memhint{filter:drop-shadow(0 0 6px #fff) drop-shadow(0 0 10px var(--fresa))}
+/* fallo: el castor equivocado niega con la cabeza y se encoge; el campo tiembla */
+.mole.memno{animation:nope .9s ease-in-out}
+@keyframes nope{0%{transform:translateY(0) rotate(0)}12%{transform:translateX(-7%) rotate(-10deg)}24%{transform:translateX(7%) rotate(10deg)}
+  36%{transform:translateX(-6%) rotate(-8deg)}48%{transform:translateX(6%) rotate(8deg)}60%{transform:translateX(0) rotate(0)}
+  75%,90%{transform:translateY(14%) scale(1.06,.82)}100%{transform:translateY(0) scale(1)}}
+.field.shake{animation:fshake .45s ease-in-out}
+@keyframes fshake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(7px)}60%{transform:translateX(-5px)}80%{transform:translateX(3px)}}
+
 /* --- Distribución: en pantalla estrecha, todo en columna (juego, mejoras, pegatinas);
        en ancha, pegatinas a la izquierda, juego en el centro y mejoras a la derecha --- */
 .layout{display:flex;flex-direction:column}
@@ -242,6 +272,7 @@ body.kbd .key{display:block}
   main{max-width:1120px}
   .layout{display:grid;grid-template-columns:minmax(120px,170px) minmax(0,540px) minmax(220px,260px);grid-template-areas:"l g r";justify-content:center;gap:18px;align-items:start}
   .stickers{grid-area:l}.pinned{grid-area:g}.side{grid-area:r}
+  body.mode-mem .layout{grid-template-columns:minmax(0,540px) minmax(220px,260px);grid-template-areas:"g r"} /* sin pegatinas: el campo pasa a la primera columna */
   .ups{grid-template-columns:1fr}
   .stk{grid-template-columns:repeat(3,1fr)}
 }
@@ -257,12 +288,16 @@ body.kbd .key{display:block}
     </div>
     <div class="pinned">
       <div class="hud">
-        <div class="pill"><b id="coins">0</b><span>flores ✿</span></div>
-        <div class="pill"><b id="ips">0</b><span>por segundo</span></div>
-        <div class="pill"><b id="tot">0</b><span>castores</span></div>
+        <div class="pill cl"><b id="coins">0</b><span>flores ✿</span></div>
+        <div class="pill cl"><b id="ips">0</b><span>por segundo</span></div>
+        <div class="pill cl"><b id="tot">0</b><span>castores</span></div>
+        <div class="pill mm"><b id="memlv">1</b><span>nivel</span></div>
+        <div class="pill mm"><b id="memlives">♥♥♥</b><span>vidas</span></div>
+        <div class="pill mm"><b id="membest">0</b><span>récord</span></div>
         <div class="helper" id="helper"></div>
         <div class="helper helper2" id="helper2"></div>
         <div class="attpill" id="attpill"></div>
+        <div class="attpill mempill" id="mempill"></div>
       </div>
       <div class="field" id="field"><div class="weather" id="weather"></div></div>
     </div>
@@ -283,7 +318,6 @@ body.kbd .key{display:block}
 <div class="menu show" id="menu" role="dialog" aria-label="Menú de inicio">
   <div class="sky" id="sky"></div>
   <h1>Castorcitos ♡</h1>
-  <p>Elige un pétalo para jugar</p>
   <svg class="flor" id="flor" viewBox="0 0 400 470"></svg>
   <span class="rec" id="menubest"></span>
 </div>
@@ -371,7 +405,7 @@ function vib(p){if(S.mute)return;try{navigator.vibrate&&navigator.vibrate(p)}cat
    ====================================================================== */
 const $=s=>document.querySelector(s);
 const KEY='topitos-kawaii-v3',BASE_HP=5,ATT=5,PER_STAGE=25;
-const D={c:0,h:0,s:0,p:0,g:0,r:0,m:0,a:0,tot:0,t:0,won:false,att:ATT,round:0,best:0,bestCombo:0,golds:0,helms:0,dodges:0,maxStage:0,mute:false,kbd:false};
+const D={c:0,h:0,s:0,p:0,g:0,r:0,m:0,a:0,tot:0,t:0,won:false,att:ATT,round:0,best:0,bestCombo:0,golds:0,helms:0,dodges:0,maxStage:0,mute:false,kbd:false,memBest:0};
 const fresh=()=>Object.assign({},D,{ach:{},t:Date.now()});
 let S=fresh();
 try{const r=localStorage.getItem(KEY);if(r)S=Object.assign(fresh(),JSON.parse(r))}catch(e){}
@@ -434,6 +468,7 @@ const A=[
  {id:'win',e:'👑',n:'Todo al máximo',t:()=>S.won}
 ];
 
+let mode=null; // 'clasico' | 'memoria' | null (en el menú sin haber elegido)
 let hp=hpMax(),over=false,paused=false,hold=false,started=false,overAt=0,slow=false,combo=0,curStage=stage(),pauseTimer=null;
 const field=$('#field'),weather=$('#weather'),cells=[];
 const logEl=document.createElement('div');logEl.className='log';logEl.innerHTML=LOG+'<div class="hp"></div>';
@@ -443,7 +478,7 @@ const mouth=logEl.querySelector('.mouth'),hpEl=logEl.querySelector('.hp');
 const MOUTH={happy:'M55 84q5 5 10 0',neutral:'M55 86h10',sad:'M55 89q5 -5 10 0'};
 const cls=c=>(c.gold?' gold':'')+(c.type!=='normal'?' '+c.type:'');
 /* paused = tronco roto (3 s); hold = pausa del jugador o por cambiar de pestaña */
-const playing=()=>started&&!over&&!paused&&!hold;
+const playing=()=>mode==='clasico'&&started&&!over&&!paused&&!hold;
 /* Tecla de cada casilla, como en el teclado numérico: 7 8 9 arriba, 1 2 3 abajo (el 5 es el tronco) */
 const KEYS=['7','8','9','4','5','6','1','2','3'],byKey={};
 for(let i=0,n=0;i<9;i++){
@@ -533,6 +568,7 @@ function escape(c){
 }
 /* auto = golpe de una bellota de la ardilla: da flores pero no suma ni rompe tu combo */
 function whack(c,auto){
+  if(mode==='memoria'){if(!auto)memTap(c);return}
   if(!c.up){
     // tocar un agujero vacío rompe el combo
     if(!c.busy&&playing()&&combo){combo=0;renderLog()}
@@ -603,9 +639,9 @@ const snd=$('#sound');snd.checked=!S.mute;
 snd.addEventListener('change',e=>{S.mute=!e.target.checked;if(!S.mute){ac();SFX.buy()}save()});
 
 /* Pausa: esconde los castores (sin morder) y congela castores, ardilla y corazones */
-const pz=document.createElement('div');pz.className='over';
+const pz=document.createElement('div');pz.className='over pz';
 pz.innerHTML='<b>PAUSA</b><span>Los castores esperan escondidos</span><small>Toca (o pulsa P) para seguir</small>';
-function pauseGame(){if(!started||over||hold)return;hold=true;document.body.classList.add('held');hideAll();pz.classList.add('show');setText(pauseBtn,'▶ Seguir');renderLog();render()}
+function pauseGame(){if(mode!=='clasico'||!started||over||hold)return;hold=true;document.body.classList.add('held');hideAll();pz.classList.add('show');setText(pauseBtn,'▶ Seguir');renderLog();render()}
 function resumeGame(){if(!hold)return;hold=false;document.body.classList.remove('held');pz.classList.remove('show');setText(pauseBtn,'⏸ Pausa');renderLog();render()}
 pz.addEventListener('click',resumeGame);
 field.appendChild(pz);
@@ -618,9 +654,9 @@ modeBtn.addEventListener('click',()=>{S.kbd=!S.kbd;setMode();save();modeBtn.blur
 addEventListener('keydown',e=>{
   if(e.repeat)return;
   if(menu.classList.contains('show')){if(e.key==='Enter'){e.preventDefault();playMode(0)}return}
-  if(e.key==='p'||e.key==='P'||e.key==='Escape'){hold?resumeGame():pauseGame();return}
+  if(e.key==='p'||e.key==='P'||e.key==='Escape'){if(mode==='clasico')hold?resumeGame():pauseGame();return}
   if(!S.kbd)return;
-  const k=/^(Digit|Numpad)([1-9])$/.exec(e.code),c=k&&byKey[k[2]];
+  const k=/^(Digit|Numpad)([1-9])$/.exec(e.code),c=k&&(k[2]==='5'?(mode==='memoria'?memCenter:null):byKey[k[2]]);
   if(!c)return;
   e.preventDefault();
   // el martillo baja sobre el agujero pulsado
@@ -630,8 +666,9 @@ addEventListener('keydown',e=>{
 
 /* Menú de inicio: flor de 5 pétalos. El primero es el juego clásico; el resto, modalidades que llegarán */
 const MODES=[
- {n:'Clásico',i:'🔨',c:'#ff9fc7',on:true},
- {c:'#9fd7ff'},{c:'#ffd28a'},{c:'#b8e986'},{c:'#d4b8ff'}
+ {id:'clasico',n:'Clásico',i:'🔨',c:'#ff9fc7',on:true},
+ {id:'memoria',n:'Memoria',i:'🧠',c:'#9fd7ff',on:true},
+ {c:'#ffd28a'},{c:'#b8e986'},{c:'#d4b8ff'}
 ];
 const menu=$('#menu'),flor=$('#flor');
 flor.innerHTML='<g class="sway">'
@@ -664,9 +701,136 @@ function playMode(k){
   const m=MODES[k];
   if(!m.on){const g=flor.querySelector(`.petal[data-k="${k}"]`);g.classList.remove('shake');void g.getBoundingClientRect();g.classList.add('shake');toast('Esta modalidad llegará pronto 🌱');return}
   ac();menu.classList.remove('show');
+  if(m.id==='memoria'){startMem();return}
+  setGameMode('clasico');
   if(!started){started=true;renderLog()}else resumeGame();
 }
-function openMenu(){pauseGame();menu.classList.add('show');flor.querySelector('.petal').focus()}
+function openMenu(){
+  if(mode==='memoria'){stopMem();setGameMode(null)}else pauseGame();
+  menu.classList.add('show');flor.querySelector('.petal').focus();
+}
+function setGameMode(md){
+  mode=md;document.body.classList.toggle('mode-mem',md==='memoria');
+  if(md==='clasico')setSeason();
+}
+
+/* ======================================================================
+   MODALIDAD MEMORIA: los castores salen de uno en uno en un orden; luego salen
+   todos, cuenta atrás de 3 s y hay que golpearlos en el mismo orden.
+   Nivel 1 = 3 castores, +1 por nivel, y cada vez se enseñan más deprisa. 3 vidas.
+   ====================================================================== */
+const MEM_NOTES=[523,587,659,698,784,880,988,1047,1175]; // una nota por casilla, de arriba a abajo
+/* castor del centro: ocupa el sitio del tronco solo en memoria (tecla 5) */
+const memCenter=(()=>{
+  const el=document.createElement('div');el.className='hole memonly';el.tabIndex=0;el.setAttribute('role','button');el.setAttribute('aria-label','Agujero del centro');
+  el.innerHTML='<div class="pit"><div class="mole"></div></div><div class="back"></div><div class="lip"></div><div class="key">5</div>'
+    +'<div class="flower a">'+FLOWER(FLORES[1])+'</div><div class="flower b">'+FLOWER(FLORES[3])+'</div>';
+  const c={el,m:el.querySelector('.mole'),eye:'#ffffff',up:false};
+  el.addEventListener('pointerdown',()=>whack(c));
+  el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();whack(c)}});
+  c.m.addEventListener('animationend',ev=>{
+    if(ev.animationName==='rise'&&c.up)c.m.className='mole mole--idle';
+    if(ev.animationName==='hide')c.m.className='mole';
+  });
+  logEl.after(el);
+  return c;
+})();
+const memCells=[...cells.slice(0,4),memCenter,...cells.slice(4)]; // las 9 casillas en orden de la cuadrícula
+const MEM_LIVES=3;
+const memLen=lv=>2+lv;
+const memStep=lv=>Math.max(380,900-50*(lv-1)); // ms entre castor y castor al enseñar el orden
+const mem={lv:1,lives:MEM_LIVES,seq:[],i:0,phase:'off',timers:[],best0:0}; // best0 = récord al empezar la partida
+const memLvEl=$('#memlv'),memLivesEl=$('#memlives'),memBestEl=$('#membest'),memPill=$('#mempill');
+const memcd=document.createElement('div');memcd.className='memcd';field.appendChild(memcd);
+const memov=document.createElement('div');memov.className='over memov';
+memov.innerHTML='<b>¡FIN!</b><span>Llegaste al nivel <em id="memend">1</em></span><span class="rec" id="memrec"></span><small>Toca para jugar otra vez</small>';
+memov.addEventListener('click',()=>{if(mem.phase==='over')startMem()});
+field.appendChild(memov);
+const memWait=(fn,ms)=>mem.timers.push(setTimeout(fn,ms));
+function memClear(){mem.timers.forEach(clearTimeout);mem.timers=[]}
+function memUp(c){
+  if(c.kind!=='castor'){c.kind='castor';c.m.innerHTML=beaver(c.eye,c.eye,false)}
+  c.type='normal';c.gold=false;c.up=true;c.m.className='mole mole--rising';
+}
+function memDown(c){if(!c.up)return;c.up=false;c.m.className='mole mole--hiding'}
+function memJoy(c){c.m.classList.remove('memok');void c.m.offsetWidth;c.m.classList.add('memok');setTimeout(()=>c.m.classList.remove('memok'),560)} // saltito de alegría
+function memCount(t){memcd.textContent=t;memcd.classList.remove('pop');void memcd.offsetWidth;memcd.classList.add('pop')}
+function memRender(){
+  setText(memLvEl,String(mem.lv));
+  setText(memLivesEl,'♥'.repeat(mem.lives)+'♡'.repeat(MEM_LIVES-mem.lives));
+  setText(memBestEl,String(S.memBest));
+}
+function startMem(){
+  memClear();setGameMode('memoria');memHideAll();
+  mem.lv=1;mem.lives=MEM_LIVES;mem.phase='start';mem.best0=S.memBest;memov.classList.remove('show');
+  memRender();setText(memPill,'¡Prepárate para memorizar!');
+  memWait(()=>memLevel(true),900);
+}
+function memHideAll(){hideAll();memCenter.up=false;memCenter.m.className='mole'}
+function stopMem(){memClear();mem.phase='off';memHideAll();memov.classList.remove('show');memcd.classList.remove('pop')}
+/* nuevo = inventa un orden nuevo; si no, repite el mismo (tras un fallo o al volver a la pestaña) */
+function memLevel(nuevo){
+  memClear();memCells.forEach(c=>{c.m.classList.remove('memhint');memDown(c)});
+  const L=memLen(mem.lv),st=memStep(mem.lv);
+  if(nuevo){
+    mem.seq=[];
+    while(mem.seq.length<L){ // sin repetir castor mientras quepan en las 9 casillas; luego, nunca dos seguidos
+      const c=memCells[Math.random()*memCells.length|0];
+      if(L<=memCells.length?mem.seq.includes(c):mem.seq[mem.seq.length-1]===c)continue;
+      mem.seq.push(c);
+    }
+  }
+  mem.phase='show';setText(memPill,'Nivel '+mem.lv+' · ¡Mira bien el orden!');
+  mem.seq.forEach((c,k)=>{
+    memWait(()=>{memUp(c);tone(MEM_NOTES[memCells.indexOf(c)],.3,'triangle',.16)},600+k*st);
+    memWait(()=>memDown(c),600+k*st+st*.7);
+  });
+  memWait(memReady,600+L*st+500);
+}
+function memReady(){
+  mem.phase='ready';setText(memPill,'¡Prepárate!');
+  memCells.forEach(memUp);
+  [3,2,1].forEach((n,k)=>memWait(()=>{memCount(n);tone(660,.12,'sine',.12)},k*1000));
+  memWait(()=>{memCount('¡Ya!');tone(990,.2,'triangle',.15);mem.phase='input';mem.i=0;setText(memPill,'Tu turno: 0/'+mem.seq.length)},3000);
+}
+function memTap(c){
+  if(mem.phase!=='input'||!c.up)return;
+  const want=mem.seq[mem.i];
+  if(c===want){
+    mem.i++;tone(MEM_NOTES[memCells.indexOf(c)],.25,'triangle',.18);vib(15);
+    float(c.el,String(mem.i));
+    memJoy(c);
+    setText(memPill,'Tu turno: '+mem.i+'/'+mem.seq.length);
+    if(mem.i===mem.seq.length){
+      mem.phase='between';SFX.season();memCount('¡Bien!');
+      memCells.forEach((d,k)=>memWait(()=>memJoy(d),650+k*70)); // todos saltan de alegría en ola
+      if(mem.lv>S.memBest){S.memBest=mem.lv;save()}
+      memRender();
+      memWait(()=>memCells.forEach(memDown),1500);
+      memWait(()=>{mem.lv++;memRender();memLevel(true)},2400);
+    }
+    return;
+  }
+  // fallo: se ilumina el que tocaba y se pierde una vida
+  mem.phase='between';SFX.erizo();vib([30,40,30]);float(c.el,'✗','bad');
+  c.m.classList.remove('memno');void c.m.offsetWidth;c.m.classList.add('memno');setTimeout(()=>c.m.classList.remove('memno'),920);
+  field.classList.remove('shake');void field.offsetWidth;field.classList.add('shake');setTimeout(()=>field.classList.remove('shake'),460);
+  want.m.classList.add('memhint');memWait(()=>float(want.el,'¡Era yo!','small'),350);
+  mem.lives--;memRender();
+  if(mem.lives<=0){memWait(memOver,1300);return}
+  memCount('¡Uy!');setText(memPill,'¡Casi! Te quedan '+mem.lives+' vidas: repetimos el nivel');
+  memWait(()=>memCells.forEach(memDown),1100);
+  memWait(()=>memLevel(false),2000);
+}
+function memOver(){
+  mem.phase='over';memCells.forEach(c=>{c.m.classList.remove('memhint');memDown(c)});
+  memov.querySelector('#memend').textContent=mem.lv;
+  memov.querySelector('#memrec').textContent=S.memBest>mem.best0?'¡Nuevo récord! ✿':'Récord: nivel '+S.memBest;
+  memov.classList.add('show');SFX.over();vib([60,60,120]);
+}
+/* si cambias de pestaña mientras se enseña el orden, al volver se repite el nivel (sin perder vida) */
+function memInterrupt(){if(mode==='memoria'&&(mem.phase==='show'||mem.phase==='ready')){memClear();memHideAll();mem.phase='wait'}}
+function memResume(){if(mode==='memoria'&&mem.phase==='wait')memLevel(false)}
 flor.querySelectorAll('.petal').forEach(g=>{
   const k=+g.dataset.k;
   g.addEventListener('click',()=>playMode(k));
@@ -786,13 +950,13 @@ rb.addEventListener('click',()=>{
   clearTimeout(pauseTimer);hideAll();
   hp=hpMax();over=false;paused=false;combo=0;curStage=0;
   ov.classList.remove('show');win.classList.remove('show');resumeGame();
-  setSeason();save();renderStickers();render();renderLog();
+  setSeason();save();renderStickers();render();renderLog();memRender();
 });
 
-setInterval(()=>{if(!over&&!hold&&S.p)earn(ips()/10);render()},100); // en pausa el conejito tampoco recoge
+setInterval(()=>{if(mode==='clasico'&&!over&&!hold&&S.p)earn(ips()/10);render()},100); // en pausa el conejito tampoco recoge
 setInterval(save,3000);
 addEventListener('pagehide',save);
-document.addEventListener('visibilitychange',()=>{if(document.hidden){save();pauseGame()}});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){save();pauseGame();memInterrupt()}else memResume()});
 setMode();setSeason();renderStickers();render();renderLog();spawn();throwAcorn();
 </script>
 </body>
