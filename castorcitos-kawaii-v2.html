@@ -118,7 +118,6 @@ h1{margin:6px 0 10px;text-align:center;font-size:1.7rem;font-weight:600;color:va
 @keyframes chomp{0%{transform:translateY(0) scaleY(1)}100%{transform:translateY(calc(4px*var(--amp))) scaleY(.55)}}
 @keyframes wig{0%{transform:translateY(0) rotate(0)}100%{transform:translateY(calc(3px*var(--amp))) rotate(calc(-6deg*var(--amp)))}}
 @keyframes chip{from{opacity:1;transform:translate(0,0) scale(1)}to{opacity:0;transform:translate(var(--dx,10px),-22px) scale(.4)}}
-@media (prefers-reduced-motion:reduce){:root{--amp:.35;--dur-sway:1.6s}.weather{display:none}}
 
 .log svg{display:block;width:100%;height:auto}
 .log.gnaw svg{animation:wob .25s ease-in-out infinite alternate}
@@ -400,6 +399,11 @@ const fmt=n=>n>=1e6?(n/1e6).toFixed(1)+'M':n>=1e3?(n/1e3).toFixed(1)+'k':String(
 /* Solo tocan la página si el texto cambia: render() va 10 veces por segundo */
 const setText=(el,t)=>{if(el.textContent!==t)el.textContent=t};
 const setHTML=(el,h)=>{if(el._h!==h){el._h=h;el.innerHTML=h}};
+/* Flores ganadas: todo lo que se gana pasa por earn() para que el marcador "por segundo"
+   muestre la media real de los últimos 5 s (golpes, ardilla, imán y conejito) */
+const gains=[],RATE_WIN=5000;
+function earn(v){S.c+=v;gains.push({t:performance.now(),v})}
+function rate(){const lim=performance.now()-RATE_WIN;while(gains.length&&gains[0].t<lim)gains.shift();return gains.reduce((a,g)=>a+g.v,0)*1000/RATE_WIN}
 const toastsEl=$('#toasts');
 function toast(t){const e=document.createElement('div');e.className='toast';e.textContent=t;toastsEl.appendChild(e);setTimeout(()=>e.remove(),3500)}
 
@@ -523,7 +527,7 @@ function escape(c){
   if(!c.up||c.hit)return;
   c.up=false;setBusy(c);c.m.className='mole mole--hiding'+cls(c);
   if(c.type==='erizo'){S.dodges++;renderLog();return} // el erizo se va sin morder
-  if(S.m>0&&!over&&!paused){const g=val()*.1*S.m;S.c+=g;float(c.el,'+'+fmt(g)+' ✿','small')}
+  if(S.m>0&&!over&&!paused){const g=val()*.1*S.m;earn(g);float(c.el,'+'+fmt(g)+' ✿','small')}
   combo=0;
   bite();
 }
@@ -551,7 +555,7 @@ function whack(c,auto){
   const before=comboMult(combo);
   if(!auto){combo++;S.bestCombo=Math.max(S.bestCombo,combo)}
   const cm=auto?1:comboMult(combo),tm=c.gold?10:c.type==='bebe'?2:c.type==='casco'?3:1;
-  const v=val()*tm*cm;S.c+=v;S.tot++;S.round++;
+  const v=val()*tm*cm;earn(v);S.tot++;S.round++;
   if(c.gold)S.golds++;
   if(c.type==='casco')S.helms++;
   c.m.className='mole mole--hit'+cls(c);
@@ -750,7 +754,7 @@ function checkAch(){
 }
 
 function render(){
-  const i=ips();
+  const i=rate();
   setText(coinsEl,fmt(S.c));
   setText(ipsEl,i.toFixed(i<10?1:0));
   setText(totEl,fmt(S.tot));
@@ -778,14 +782,14 @@ if(off>30&&ips()>0){const g=ips()*off*.5;S.c+=g;toast('Mientras no estabas, el c
 const rb=$('#reset');let armed=0;
 rb.addEventListener('click',()=>{
   if(!armed){armed=1;rb.textContent='¿Seguro? Toca otra vez';setTimeout(()=>{armed=0;rb.textContent='Borrar partida'},3000);return}
-  const mute=S.mute,kbd=S.kbd;S=fresh();S.mute=mute;S.kbd=kbd;armed=0;rb.textContent='Borrar partida';
+  const mute=S.mute,kbd=S.kbd;S=fresh();S.mute=mute;S.kbd=kbd;gains.length=0;armed=0;rb.textContent='Borrar partida';
   clearTimeout(pauseTimer);hideAll();
   hp=hpMax();over=false;paused=false;combo=0;curStage=0;
   ov.classList.remove('show');win.classList.remove('show');resumeGame();
   setSeason();save();renderStickers();render();renderLog();
 });
 
-setInterval(()=>{if(!over&&!hold)S.c+=ips()/10;render()},100); // en pausa el conejito tampoco recoge
+setInterval(()=>{if(!over&&!hold&&S.p)earn(ips()/10);render()},100); // en pausa el conejito tampoco recoge
 setInterval(save,3000);
 addEventListener('pagehide',save);
 document.addEventListener('visibilitychange',()=>{if(document.hidden){save();pauseGame()}});
